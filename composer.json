@@ -1,0 +1,92 @@
+{
+    "name": "franbarbalopez/mirror",
+    "description": "Mirror is a Laravel package that handles user impersonation.",
+    "keywords": [
+        "impersonation",
+        "impersonate",
+        "laravel"
+    ],
+    "homepage": "https://github.com/franbarbalopez/mirror",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Francisco José Barba López",
+            "email": "franciscojose.barbalopez@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.46.1|^12.37"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.8.0",
+        "laravel/pint": "^1.25",
+        "orchestra/testbench": "^9.15.0|^10.6.0",
+        "pestphp/pest": "^3.8.4|^4.1",
+        "pestphp/pest-plugin-laravel": "^3.2.0|^4.0",
+        "pestphp/pest-plugin-type-coverage": "^3.6.1|^4.0",
+        "rector/rector": "^2.2"
+    },
+    "scripts": {
+        "post-autoload-dump": [
+          "@clear",
+          "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+          "Composer\\Config::disableProcessTimeout",
+          "@build",
+          "@php vendor/bin/testbench serve --ansi"
+        ],
+        "test:coverage": "@php vendor/bin/pest --coverage --exactly=100",
+        "lint": "pint",
+        "test:lint": "pint --test",
+        "refactor": "rector",
+        "test:refactor": "rector --dry-run",
+        "test:analyse": "phpstan analyse",
+        "fix": [
+          "@refactor",
+          "@lint"
+        ],
+        "test": [
+          "@test:lint",
+          "@test:refactor",
+          "@test:analyse",
+          "@test:coverage"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "Mirror\\": "src/",
+            "Mirror\\Tests\\": "tests/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Mirror\\MirrorServiceProvider"
+            ],
+            "aliases": {
+                "Mirror": "Mirror\\Facades\\Mirror"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
