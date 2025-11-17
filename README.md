@@ -272,6 +272,43 @@ Mirror dispatches two events you can listen to:
 
 Both events contain the impersonator, the target user, and the guard name. Good for audit logs or triggering workflows.
 
+Events are dispatched **after the response** is sent to the client, ensuring that critical impersonation operations complete without delay. This is especially important for middleware like `mirror.ttl` that may run on every request.
+
+```php
+use Mirror\Events\ImpersonationStarted;
+
+Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event) {
+    // Log the activity to your audit system of choice
+    Log::info('User impersonation started', [
+        'impersonator_id' => $event->impersonator->id,
+        'impersonated_id' => $event->impersonated->id,
+        'guard' => $event->guardName,
+    ]);
+});
+```
+
+## Performance & Optimization
+
+Mirror is optimized for high-performance applications:
+
+### Request-Scoped Caching
+
+The impersonator model is cached within a single request to avoid redundant database queries:
+
+```php
+// This first call will query the database
+$impersonator = Mirror::getImpersonator();
+
+// Subsequent calls in the same request use the cached instance, therefore this one will not:
+$impersonator = Mirror::getImpersonator();
+```
+
+This is particularly beneficial for middleware like `mirror.ttl` that run on every request.
+
+### Deferred Event Dispatching
+
+Impersonation events are dispatched after the response is sent to the client, ensuring that event listeners don't impact response time. This keeps your request cycle fast while still allowing audit logging and other background tasks.
+
 ## Multi-Guard Support
 
 Mirror automatically detects which guard you're using:
