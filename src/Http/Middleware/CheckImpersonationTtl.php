@@ -3,19 +3,16 @@
 namespace Mirror\Http\Middleware;
 
 use Closure;
-use Illuminate\Config\Repository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Mirror\Exceptions\ImpersonationException;
-use Mirror\Facades\Mirror;
-use Mirror\ImpersonationSession;
+use Mirror\Impersonator;
 use Symfony\Component\HttpFoundation\Response;
 
 readonly class CheckImpersonationTtl
 {
     public function __construct(
-        private ImpersonationSession $impersonationSession,
-        private Repository $config
+        private Impersonator $impersonator
     ) {}
 
     /**
@@ -27,19 +24,20 @@ readonly class CheckImpersonationTtl
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Mirror::isImpersonating()) {
-            $ttl = $this->config->get('mirror.ttl');
+        if (! $this->impersonator->isImpersonating()) {
+            return $next($request);
+        }
 
-            if ($this->impersonationSession->isExpired($ttl)) {
-                $redirectUrl = Mirror::getLeaveRedirectUrl() ?? $this->config->get('mirror.default_redirect_url', '/');
+        if ($this->impersonator->isExpired()) {
+            $redirectUrl = $this->impersonator->getLeaveRedirectUrl()
+                ?? $this->impersonator->getDefaultRedirectUrl();
 
-                Mirror::forceStop();
+            $this->impersonator->forceStop();
 
-                /** @var RedirectResponse $response */
-                $response = redirect($redirectUrl);
+            /** @var RedirectResponse $response */
+            $response = redirect($redirectUrl);
 
-                return $response->with('warning', 'Your impersonation session has expired and you have been returned to your original account.');
-            }
+            return $response->with('warning', 'Your impersonation session has expired and you have been returned to your original account.');
         }
 
         return $next($request);

@@ -7,35 +7,69 @@ use Illuminate\Config\Repository;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\ImpersonationException;
 use Mirror\Exceptions\TamperedSessionException;
 
-readonly class Impersonator
+class Impersonator
 {
+    /**
+     * Request-scoped cache for impersonator model
+     */
+    private ?Authenticatable $impersonatorCache = null;
+
+    /**
+     * Cached configuration values
+     */
+    private readonly bool $enabled;
+
+    /**
+     * Cached TTL value
+     */
+    private readonly ?int $ttl;
+
+    /**
+     * Cached default redirect URL
+     */
+    private readonly string $defaultRedirectUrl;
+
     public function __construct(
-        private AuthManager $auth,
-        private ImpersonationSession $impersonationSession,
-        private Repository $config,
-        private Request $request,
-    ) {}
+        private readonly AuthManager $auth,
+        private readonly ImpersonationSession $impersonationSession,
+        private readonly Repository $config,
+        private readonly Request $request,
+    ) {
+        $this->enabled = $this->config->get('mirror.enabled', true);
+        $this->ttl = $this->config->get('mirror.ttl');
+        $this->defaultRedirectUrl = $this->config->get('mirror.default_redirect_url', '/');
+    }
 
     /**
      * Get the name of the guard currently being used.
      */
     protected function getCurrentGuardName(): string
     {
+        $defaultGuard = $this->auth->getDefaultDriver();
+        if ($this->auth->guard($defaultGuard)->check()) {
+            return $defaultGuard;
+        }
+
         /** @var array<string> $guards */
         $guards = $this->config->get('auth.guards', []);
 
         foreach (array_keys($guards) as $guardName) {
+            if ($guardName === $defaultGuard) {
+                continue;
+            }
+
             if ($this->auth->guard($guardName)->check()) {
                 return $guardName;
             }
         }
 
-        return $this->auth->getDefaultDriver();
+        return $defaultGuard;
     }
 
     /**
@@ -77,7 +111,9 @@ readonly class Impersonator
 
         $guard->login($user);
 
-        ImpersonationStarted::dispatch($impersonator, $user, $guardName);
+        $this->dispatchEventAfterResponse(
+            new ImpersonationStarted($impersonator, $user, $guardName)
+        );
 
         return $startRedirectUrl;
     }
@@ -133,7 +169,11 @@ readonly class Impersonator
         /** @var Authenticatable $impersonatorUser */
         $impersonatorUser = $guard->user();
 
-        ImpersonationStopped::dispatch($impersonatorUser, $impersonatedUser, $guardName);
+        $this->dispatchEventAfterResponse(
+            new ImpersonationStopped($impersonatorUser, $impersonatedUser, $guardName)
+        );
+
+        $this->impersonatorCache = null;
     }
 
     /**
@@ -149,6 +189,10 @@ readonly class Impersonator
      */
     public function getImpersonator(): ?Authenticatable
     {
+        if ($this->impersonatorCache instanceof Authenticatable) {
+            return $this->impersonatorCache;
+        }
+
         $impersonatorId = $this->impersonationSession->getImpersonator();
 
         if (! $impersonatorId) {
@@ -157,7 +201,9 @@ readonly class Impersonator
 
         $class = $this->getAuthenticatableClass();
 
-        return $class::find($impersonatorId);
+        $this->impersonatorCache = $class::find($impersonatorId);
+
+        return $this->impersonatorCache;
     }
 
     /**
@@ -252,13 +298,37 @@ readonly class Impersonator
     }
 
     /**
+     * Check if the impersonation session has expired
+     */
+    public function isExpired(): bool
+    {
+        return $this->impersonationSession->isExpired($this->ttl);
+    }
+
+    /**
+     * Get the TTL configuration value
+     */
+    public function getTtl(): ?int
+    {
+        return $this->ttl;
+    }
+
+    /**
+     * Get the default redirect URL
+     */
+    public function getDefaultRedirectUrl(): string
+    {
+        return $this->defaultRedirectUrl;
+    }
+
+    /**
      * Ensure impersonation is enabled in config.
      *
      * @throws ImpersonationException
      */
     protected function ensureImpersonationIsEnabled(): void
     {
-        if (! $this->config->get('mirror.enabled', true)) {
+        if (! $this->enabled) {
             throw ImpersonationException::notEnabled();
         }
     }
@@ -294,9 +364,7 @@ readonly class Impersonator
      */
     protected function ensureNotExpired(): void
     {
-        $ttl = $this->config->get('mirror.ttl');
-
-        if ($this->impersonationSession->isExpired($ttl)) {
+        if ($this->impersonationSession->isExpired($this->ttl)) {
             $this->impersonationSession->clear();
             throw ImpersonationException::expired();
         }
@@ -329,6 +397,34 @@ readonly class Impersonator
         // @phpstan-ignore-next-line function.alreadyNarrowedType
         if (method_exists($user, 'canBeImpersonated') && ! $user->canBeImpersonated()) {
             throw ImpersonationException::cannotBeImpersonated();
+        }
+    }
+
+    /**
+     * Dispatch an event after the response is sent
+     *
+     * @param  ImpersonationStarted|ImpersonationStopped  $event
+     *
+     * @throws InvalidArgumentException
+     */
+    protected function dispatchEventAfterResponse(object $event): void
+    {
+        $result = match ($event::class) {
+            ImpersonationStarted::class => ImpersonationStarted::dispatch(
+                $event->impersonator,
+                $event->impersonated,
+                $event->guardName
+            ),
+            ImpersonationStopped::class => ImpersonationStopped::dispatch(
+                $event->impersonator,
+                $event->impersonated,
+                $event->guardName
+            ),
+            default => throw new InvalidArgumentException(sprintf('Unknown event class: %s', $event::class)),
+        };
+
+        if (is_object($result) && method_exists($result, 'afterResponse')) {
+            $result->afterResponse();
         }
     }
 }
