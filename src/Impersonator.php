@@ -7,6 +7,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\ImpersonationException;
@@ -17,7 +18,7 @@ class Impersonator
     /**
      * Request-scoped cache for impersonator model
      */
-    private ?Authenticatable $impersonatorCache;
+    private ?Authenticatable $impersonatorCache = null;
 
     /**
      * Cached configuration values
@@ -43,7 +44,6 @@ class Impersonator
         $this->enabled = $this->config->get('mirror.enabled', true);
         $this->ttl = $this->config->get('mirror.ttl');
         $this->defaultRedirectUrl = $this->config->get('mirror.default_redirect_url', '/');
-        $this->impersonatorCache = null;
     }
 
     /**
@@ -189,7 +189,7 @@ class Impersonator
      */
     public function getImpersonator(): ?Authenticatable
     {
-        if ($this->impersonatorCache !== null) {
+        if ($this->impersonatorCache instanceof Authenticatable) {
             return $this->impersonatorCache;
         }
 
@@ -402,8 +402,12 @@ class Impersonator
 
     /**
      * Dispatch an event after the response is sent
+     *
+     * @param  ImpersonationStarted|ImpersonationStopped  $event
+     *
+     * @throws InvalidArgumentException
      */
-    protected function dispatchEventAfterResponse(ImpersonationStarted|ImpersonationStopped $event): void
+    protected function dispatchEventAfterResponse(object $event): void
     {
         $result = match ($event::class) {
             ImpersonationStarted::class => ImpersonationStarted::dispatch(
@@ -416,6 +420,7 @@ class Impersonator
                 $event->impersonated,
                 $event->guardName
             ),
+            default => throw new InvalidArgumentException(sprintf('Unknown event class: %s', $event::class)),
         };
 
         if (is_object($result) && method_exists($result, 'afterResponse')) {

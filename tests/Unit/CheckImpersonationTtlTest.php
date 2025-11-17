@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Mirror\Facades\Mirror;
+use Mirror\Impersonator;
 use Workbench\App\Models\User;
 
 use function Pest\Laravel\actingAs;
@@ -173,5 +174,34 @@ describe('CheckImpersonationTtl middleware configuration', function (): void {
 
         get('/test')
             ->assertOk();
+    });
+
+    it('uses default redirect URL when leave redirect URL is null', function (): void {
+        Config::set('mirror.ttl', 3600);
+        Config::set('mirror.default_redirect_url', '/dashboard');
+
+        Route::middleware('mirror.ttl')->get('/test', fn () => response()->json(['status' => 'ok']));
+
+        $admin = User::factory()->create();
+        $user = User::factory()->create();
+
+        actingAs($admin);
+
+        Mirror::start($user);
+
+        Carbon::setTestNow(Carbon::now()->addSeconds(3601));
+
+        $mock = mock(Impersonator::class);
+        $mock->shouldReceive('isImpersonating')->andReturn(true);
+        $mock->shouldReceive('isExpired')->andReturn(true);
+        $mock->shouldReceive('getLeaveRedirectUrl')->andReturn(null);
+        $mock->shouldReceive('getDefaultRedirectUrl')->andReturn('/dashboard');
+        $mock->shouldReceive('forceStop')->andReturn(null);
+
+        app()->instance(Impersonator::class, $mock);
+
+        get('/test')
+            ->assertRedirect('/dashboard')
+            ->assertSessionHas('warning');
     });
 });

@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use Illuminate\Events\Dispatcher as EventsDispatcher;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -12,6 +13,7 @@ use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\ImpersonationException;
 use Mirror\Exceptions\TamperedSessionException;
 use Mirror\Facades\Mirror;
+use Mirror\Impersonator;
 use Workbench\App\Models\User;
 
 use function Pest\Laravel\actingAs;
@@ -522,5 +524,145 @@ describe('edge cases and coverage', function (): void {
 
         expect(Mirror::isImpersonating())->toBeTrue()
             ->and(auth()->id())->toBe($targetUser->id);
+    });
+
+    it('checks alternative guards when default guard has no user', function (): void {
+        Config::set('auth.defaults.guard', 'web');
+        Config::set('auth.guards', [
+            'web' => ['driver' => 'session', 'provider' => 'users'],
+            'api' => ['driver' => 'token', 'provider' => 'users'],
+            'admin' => ['driver' => 'session', 'provider' => 'users'],
+        ]);
+
+        $admin = User::factory()->create();
+        $targetUser = User::factory()->create();
+
+        actingAs($admin, 'web');
+
+        $redirectUrl = Mirror::start($targetUser);
+
+        expect($redirectUrl)->toBeNull()
+            ->and(Mirror::isImpersonating())->toBeTrue()
+            ->and(auth('web')->id())->toBe($targetUser->id);
+    });
+
+    it('iterates through multiple guards to find authenticated user', function (): void {
+        Config::set('auth.defaults.guard', 'web');
+        Config::set('auth.guards', [
+            'web' => ['driver' => 'session', 'provider' => 'users'],
+            'api' => ['driver' => 'session', 'provider' => 'users'],
+            'admin' => ['driver' => 'session', 'provider' => 'users'],
+        ]);
+
+        $admin = User::factory()->create();
+        $user = User::factory()->create();
+
+        auth('admin')->login($admin);
+        auth('web')->logout();
+
+        expect(auth('web')->check())->toBeFalse()
+            ->and(auth('admin')->check())->toBeTrue();
+
+        $redirectUrl = Mirror::start($user);
+
+        expect($redirectUrl)->toBeNull()
+            ->and(Mirror::isImpersonating())->toBeTrue()
+            ->and(auth('admin')->id())->toBe($user->id);
+    });
+
+    it('calls afterResponse on dispatch result when method exists', function (): void {
+        $admin = User::factory()->create();
+        $targetUser = User::factory()->create();
+
+        actingAs($admin);
+
+        Mirror::start($targetUser);
+
+        Mirror::stop();
+
+        expect(Mirror::isImpersonating())->toBeFalse();
+    });
+
+    it('invokes dispatcher afterResponse hook when available', function (): void {
+        $dispatcher = new class(app()) extends EventsDispatcher
+        {
+            public bool $afterResponseCalled = false;
+
+            public function dispatch($event, $payload = [], $halt = false): mixed
+            {
+                return new class($this)
+                {
+                    public function __construct(private readonly EventsDispatcher $tracker) {}
+
+                    public function afterResponse(): void
+                    {
+                        $this->tracker->afterResponseCalled = true;
+                    }
+                };
+            }
+        };
+
+        $originalDispatcher = Event::getFacadeRoot();
+        Event::swap($dispatcher);
+
+        $admin = User::factory()->create();
+        $targetUser = User::factory()->create();
+
+        actingAs($admin);
+
+        Mirror::start($targetUser);
+
+        expect($dispatcher->afterResponseCalled)->toBeTrue();
+
+        Event::swap($originalDispatcher);
+    });
+
+    it('throws exception for unknown event class in dispatchEventAfterResponse', function (): void {
+        $admin = User::factory()->create();
+
+        actingAs($admin);
+
+        $impersonator = app(Impersonator::class);
+
+        $unknownEvent = new class
+        {
+            public string $impersonator = 'admin';
+
+            public string $impersonated = 'user';
+
+            public string $guardName = 'web';
+        };
+
+        $reflection = new ReflectionClass($impersonator);
+        $method = $reflection->getMethod('dispatchEventAfterResponse');
+
+        $method->invoke($impersonator, $unknownEvent);
+    })->throws(InvalidArgumentException::class, 'Unknown event class');
+
+    it('dispatches started event with afterResponse method', function (): void {
+        Event::fake();
+
+        $admin = User::factory()->create();
+        $targetUser = User::factory()->create();
+
+        actingAs($admin);
+
+        Mirror::start($targetUser);
+
+        Event::assertDispatched(ImpersonationStarted::class);
+    });
+
+    it('dispatches stopped event with afterResponse method', function (): void {
+        Event::fake();
+
+        $admin = User::factory()->create();
+        $targetUser = User::factory()->create();
+
+        actingAs($admin);
+
+        Mirror::start($targetUser);
+        Mirror::stop();
+
+        Event::assertDispatched(ImpersonationStopped::class);
     });
 });
