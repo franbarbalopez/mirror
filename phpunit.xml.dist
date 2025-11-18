@@ -5,8 +5,8 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
+        <testsuite name="Mirror Test Suite">
+            <directory>tests</directory>
         </testsuite>
     </testsuites>
     <source>
