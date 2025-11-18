@@ -60,15 +60,14 @@
     },
     "autoload": {
         "psr-4": {
-            "Mirror\\": "src/",
-            "Mirror\\Tests\\": "tests/"
+            "Mirror\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Workbench\\App\\": "workbench/app/",
-            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
-            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+            "Mirror\\Tests\\": "tests/",
+            "App\\": "workbench/app/",
+            "Database\\Factories\\": "workbench/database/factories/"
         }
     },
     "config": {
