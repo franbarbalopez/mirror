@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=franbarbalopez&project=mirror&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 <img src="art/logo.png" alt="Mirror Logo">
 
 <div align="center">
