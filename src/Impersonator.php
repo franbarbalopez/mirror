@@ -173,12 +173,7 @@ class Impersonator
 
         $remember = false;
         if ($recaller instanceof Recaller && $recaller->valid()) {
-            $recallerId = $recaller->id();
-            if (is_int($impersonatorId)) {
-                $recallerId = intval($recallerId);
-            }
-
-            $remember = $impersonatorId === $recallerId;
+            $remember = $impersonatorId == $recaller->id();
         }
 
         $guard->loginUsingId($impersonatorId, $remember);
