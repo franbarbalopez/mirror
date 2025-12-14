@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Events\Dispatcher as EventsDispatcher;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -923,7 +925,6 @@ it('remembers the "remember" cookie of the impersonator\'s original session', fu
     $this->actingAs($targetUser, 'web')->call('POST', '/stop', [], $cookies);
     expect(Auth::id())->toBe($admin->id)
         ->and(Mirror::isImpersonating())->toBeFalse();
-
 });
 
 it('doesnt set the "remember" cookie if the impersonator\'s original session didnt have it', function (): void {
@@ -954,5 +955,121 @@ it('doesnt set the "remember" cookie if the impersonator\'s original session did
 
     expect(Auth::id())->toBe($admin->id)
         ->and(Mirror::isImpersonating())->toBeFalse();
+});
 
+it('recaller returns null if the guard doesnt have getRequest or getRecallerName method', function (): void {
+    $admin = User::factory()->create();
+    $targetUser = User::factory()->create();
+
+    $fakeGuard = new class($admin, $targetUser) implements StatefulGuard {
+        private ?Authenticatable $currentUser;
+        public bool $loginUsingIdRememberFlag = true;
+
+        public function __construct(
+            private readonly Authenticatable $impersonator,
+            private readonly Authenticatable $impersonated,
+        )
+        {
+            $this->currentUser = $this->impersonated;
+        }
+
+        public function check(): bool
+        {
+            return $this->currentUser !== null;
+        }
+
+        public function guest(): bool
+        {
+            return !$this->check();
+        }
+
+        public function user(): ?Authenticatable
+        {
+            return $this->currentUser;
+        }
+
+        public function id(): int|string|null
+        {
+            return $this->currentUser?->getAuthIdentifier();
+        }
+
+        public function validate(array $credentials = []): bool
+        {
+            return false;
+        }
+
+        public function setUser(Authenticatable $user): static
+        {
+            $this->currentUser = $user;
+            return $this;
+        }
+
+        public function hasUser(): bool
+        {
+            return $this->currentUser !== null;
+        }
+
+        public function attempt(array $credentials = [], $remember = false): bool
+        {
+            return false;
+        }
+
+        public function once(array $credentials = []): bool
+        {
+            return false;
+        }
+
+        public function login(Authenticatable $user, $remember = false): void
+        {
+            $this->currentUser = $user;
+        }
+
+        public function loginUsingId($id, $remember = false): Authenticatable|false
+        {
+            $this->loginUsingIdRememberFlag = (bool) $remember;
+
+            if ((string) $id === (string) $this->impersonator->getAuthIdentifier()) {
+                $this->currentUser = $this->impersonator;
+                return $this->impersonator;
+            }
+
+            return false;
+        }
+
+        public function onceUsingId($id): Authenticatable|false
+        {
+            return false;
+        }
+
+        public function viaRemember(): bool
+        {
+            return false;
+        }
+
+        public function logout(): void
+        {
+            $this->currentUser = null;
+        }
+    };
+
+    Auth::extend('fake-stateful', fn() => $fakeGuard);
+
+    Config::set('auth.guards.custom', [
+        'driver' => 'fake-stateful',
+        'provider' => 'users',
+    ]);
+
+    Auth::guard('custom')->login($admin);
+    Auth::shouldUse('custom');
+    Mirror::start($targetUser);
+
+    expect(Auth::id())->toBe($targetUser->id)
+        ->and(Mirror::isImpersonating())->toBeTrue()
+        ->and(Session::get('mirror.guard_name'))->toBe('custom');
+
+    Mirror::stop();
+
+    expect($fakeGuard->loginUsingIdRememberFlag)->toBeFalse()
+        ->and(Auth::id())->toBe($admin->id)
+        ->and(Mirror::isImpersonating())->toBeFalse();
 });
