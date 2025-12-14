@@ -961,26 +961,27 @@ it('recaller returns null if the guard doesnt have getRequest or getRecallerName
     $admin = User::factory()->create();
     $targetUser = User::factory()->create();
 
-    $fakeGuard = new class($admin, $targetUser) implements StatefulGuard {
+    $fakeGuard = new class($admin, $targetUser) implements StatefulGuard
+    {
         private ?Authenticatable $currentUser;
+
         public bool $loginUsingIdRememberFlag = true;
 
         public function __construct(
             private readonly Authenticatable $impersonator,
             private readonly Authenticatable $impersonated,
-        )
-        {
+        ) {
             $this->currentUser = $this->impersonated;
         }
 
         public function check(): bool
         {
-            return $this->currentUser !== null;
+            return $this->currentUser instanceof \Illuminate\Contracts\Auth\Authenticatable;
         }
 
         public function guest(): bool
         {
-            return !$this->check();
+            return ! $this->check();
         }
 
         public function user(): ?Authenticatable
@@ -1001,12 +1002,13 @@ it('recaller returns null if the guard doesnt have getRequest or getRecallerName
         public function setUser(Authenticatable $user): static
         {
             $this->currentUser = $user;
+
             return $this;
         }
 
         public function hasUser(): bool
         {
-            return $this->currentUser !== null;
+            return $this->currentUser instanceof \Illuminate\Contracts\Auth\Authenticatable;
         }
 
         public function attempt(array $credentials = [], $remember = false): bool
@@ -1030,6 +1032,7 @@ it('recaller returns null if the guard doesnt have getRequest or getRecallerName
 
             if ((string) $id === (string) $this->impersonator->getAuthIdentifier()) {
                 $this->currentUser = $this->impersonator;
+
                 return $this->impersonator;
             }
 
@@ -1052,7 +1055,7 @@ it('recaller returns null if the guard doesnt have getRequest or getRecallerName
         }
     };
 
-    Auth::extend('fake-stateful', fn() => $fakeGuard);
+    Auth::extend('fake-stateful', fn (): object => $fakeGuard);
 
     Config::set('auth.guards.custom', [
         'driver' => 'fake-stateful',
