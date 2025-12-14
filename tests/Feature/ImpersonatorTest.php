@@ -3,10 +3,12 @@
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Events\Dispatcher as EventsDispatcher;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
@@ -887,4 +889,70 @@ it('isImpersonating can be called many times with minimal session reads', functi
 
     expect(array_unique($checks))->toHaveCount(1)
         ->and($checks[0])->toBeTrue();
+});
+
+it('remembers the "remember" cookie of the impersonator\'s original session', function (): void {
+    $admin = User::factory()->create();
+    $targetUser = User::factory()->create();
+
+    // Create route so we can check the cookies
+    Route::post('/stop', function (): Response {
+        Mirror::stop();
+        $guard = Auth::guard('web');
+
+        expect($guard->getCookieJar()->hasQueued($guard->getRecallerName()))
+            ->toBeTrue();
+
+        return response('ok');
+    });
+
+    $guard = Auth::guard('web');
+    $remember = true;
+    $guard->login($admin, $remember);
+
+    Mirror::start($targetUser);
+
+    expect(Auth::id())->toBe($targetUser->id)
+        ->and(Mirror::isImpersonating())->toBeTrue()
+        ->and(Mirror::impersonatorId())->toBe($admin->id);
+
+    $cookies = [
+        $guard->getRecallerName() => $admin->getAuthIdentifier().'|'.$admin->getRememberToken().'|'.$admin->getAuthPassword(),
+    ];
+
+    $this->actingAs($targetUser, 'web')->call('POST', '/stop', [], $cookies);
+    expect(Auth::id())->toBe($admin->id)
+        ->and(Mirror::isImpersonating())->toBeFalse();
+
+});
+
+it('doesnt set the "remember" cookie if the impersonator\'s original session didnt have it', function (): void {
+    $admin = User::factory()->create();
+    $targetUser = User::factory()->create();
+
+    // Create route so we can check the cookies
+    Route::post('/stop', function (): Response {
+        Mirror::stop();
+        $guard = Auth::guard('web');
+
+        expect($guard->getCookieJar()->hasQueued($guard->getRecallerName()))
+            ->toBeFalse();
+
+        return response('ok');
+    });
+
+    $guard = Auth::guard('web');
+    $guard->login($admin);
+
+    Mirror::start($targetUser);
+
+    expect(Auth::id())->toBe($targetUser->id)
+        ->and(Mirror::isImpersonating())->toBeTrue()
+        ->and(Mirror::impersonatorId())->toBe($admin->id);
+
+    $this->actingAs($targetUser, 'web')->post('/stop');
+
+    expect(Auth::id())->toBe($admin->id)
+        ->and(Mirror::isImpersonating())->toBeFalse();
+
 });

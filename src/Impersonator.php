@@ -3,8 +3,11 @@
 namespace Mirror;
 
 use Illuminate\Auth\AuthManager;
+use Illuminate\Auth\Recaller;
 use Illuminate\Config\Repository;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
@@ -158,13 +161,22 @@ class Impersonator
         $guardName = $session->getGuardName();
 
         $guard = $this->auth->guard($guardName);
+
+        $recaller = $this->recaller($guard);
+
         /** @var Authenticatable $impersonatedUser */
         $impersonatedUser = $guard->user();
 
         $session->clear();
 
         $guard->logout();
-        $guard->loginUsingId($impersonatorId);
+
+        $remember = false;
+        if ($recaller instanceof Recaller && $recaller->valid()) {
+            $remember = $impersonatorId == $recaller->id();
+        }
+
+        $guard->loginUsingId($impersonatorId, $remember);
 
         /** @var Authenticatable $impersonatorUser */
         $impersonatorUser = $guard->user();
@@ -426,5 +438,25 @@ class Impersonator
         if (is_object($result) && method_exists($result, 'afterResponse')) {
             $result->afterResponse();
         }
+    }
+
+    /**
+     * Get the decrypted recaller cookie for the request.
+     */
+    protected function recaller(Guard|StatefulGuard $guard): ?Recaller
+    {
+        if (
+            ! is_callable([$guard, 'getRequest'])
+            || ! is_callable([$guard, 'getRecallerName'])
+            || is_null($guard->getRequest())
+        ) {
+            return null;
+        }
+
+        if ($recaller = $guard->getRequest()->cookies->get($guard->getRecallerName())) {
+            return new Recaller($recaller);
+        }
+
+        return null;
     }
 }
