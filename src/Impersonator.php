@@ -446,8 +446,11 @@ class Impersonator
     protected function recaller(Guard|StatefulGuard $guard): ?Recaller
     {
         if (
+            // @phpstan-ignore-next-line function.alreadyNarrowedType
             ! is_callable([$guard, 'getRequest'])
+            // @phpstan-ignore-next-line function.alreadyNarrowedType
             || ! is_callable([$guard, 'getRecallerName'])
+            // @phpstan-ignore-next-line function.impossibleType
             || is_null($guard->getRequest())
         ) {
             return null;
