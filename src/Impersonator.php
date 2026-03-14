@@ -222,7 +222,7 @@ class Impersonator
      * Start impersonating a user by their primary key.
      *
      * @throws ImpersonationException
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function startByKey(int|string $key, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null): ?string
     {
@@ -231,7 +231,7 @@ class Impersonator
         $user = $class::find($key);
 
         if (! $user) {
-            throw new \InvalidArgumentException(sprintf('User with key [%s] not found.', $key));
+            throw new InvalidArgumentException(sprintf('User with key [%s] not found.', $key));
         }
 
         return $this->start($user, $leaveRedirectUrl, $startRedirectUrl);
@@ -241,7 +241,7 @@ class Impersonator
      * Start impersonating a user by their email address.
      *
      * @throws ImpersonationException
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function startByEmail(string $email, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null): ?string
     {
@@ -250,7 +250,7 @@ class Impersonator
         $user = $class::query()->where('email', $email)->first();
 
         if (! $user) {
-            throw new \InvalidArgumentException(sprintf('User with email [%s] not found.', $email));
+            throw new InvalidArgumentException(sprintf('User with email [%s] not found.', $email));
         }
 
         return $this->start($user, $leaveRedirectUrl, $startRedirectUrl);
