@@ -976,7 +976,7 @@ it('recaller returns null if the guard doesnt have getRequest or getRecallerName
 
         public function check(): bool
         {
-            return $this->currentUser instanceof \Illuminate\Contracts\Auth\Authenticatable;
+            return $this->currentUser instanceof Authenticatable;
         }
 
         public function guest(): bool
@@ -1008,7 +1008,7 @@ it('recaller returns null if the guard doesnt have getRequest or getRecallerName
 
         public function hasUser(): bool
         {
-            return $this->currentUser instanceof \Illuminate\Contracts\Auth\Authenticatable;
+            return $this->currentUser instanceof Authenticatable;
         }
 
         public function attempt(array $credentials = [], $remember = false): bool

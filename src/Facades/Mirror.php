@@ -3,6 +3,8 @@
 namespace Mirror\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Mirror\Exceptions\ImpersonationException;
+use Mirror\Impersonator;
 
 /**
  * @method static ?string start(\Illuminate\Contracts\Auth\Authenticatable $user, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null)
@@ -19,9 +21,9 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool impersonating()
  * @method static \Illuminate\Contracts\Auth\Authenticatable|null impersonator()
  *
- * @throws \Mirror\Exceptions\ImpersonationException
+ * @throws ImpersonationException
  *
- * @see \Mirror\Impersonator
+ * @see Impersonator
  */
 class Mirror extends Facade
 {
