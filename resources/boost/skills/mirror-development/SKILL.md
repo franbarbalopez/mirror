@@ -1,13 +1,16 @@
 ---
 name: mirror-development
-description: Implement user impersonation features in Laravel applications using Mirror.
+description: >
+  Implement user impersonation in Laravel using the Mirror package — model
+  configuration, routes, controllers, middleware, and audit logging. Use when
+  the user says "impersonate user", "login as another user", "switch user",
+  "Mirror package", "admin user switching", or needs to add user impersonation
+  to a Laravel app.
 ---
 
 # User Impersonation Development
 
-This skill guides the implementation of user impersonation features in Laravel applications using Mirror.
-
-It allows administrators to temporarily log in as another user to debug issues, provide support, or verify how features behave from a user's perspective.
+Implement user impersonation in Laravel with Mirror. Administrators can temporarily log in as another user to debug issues, provide support, or verify feature behaviour.
 
 ---
 
@@ -29,8 +32,6 @@ php artisan vendor:publish --tag=mirror
 
 ## 2 Configure the User Model
 
-Define the authorization rules that control who can impersonate others.
-
 ```php
 use Mirror\Concerns\Impersonatable;
 
@@ -50,13 +51,9 @@ class User extends Authenticatable
 }
 ```
 
-These methods determine whether the current user may impersonate someone else and whether a given user account is allowed to be impersonated.
-
 ---
 
 ## 3 Create Routes
-
-Define routes for starting and stopping impersonation.
 
 ```php
 Route::post('/admin/users/{user}/impersonate', [UserImpersonationController::class, 'start'])
@@ -69,8 +66,6 @@ Route::post('/impersonation/leave', [UserImpersonationController::class, 'leave'
 ---
 
 ## 4 Create Controller
-
-Implement a controller that starts and ends the impersonation session.
 
 ```php
 use Mirror\Facades\Mirror;
@@ -97,7 +92,7 @@ class UserImpersonationController extends Controller
 
 ## 5 Add Middleware
 
-Protect administrative routes with the TTL middleware.
+TTL middleware auto-expires impersonation sessions on admin routes:
 
 ```php
 Route::middleware(['auth', 'mirror.ttl'])->group(function () {
@@ -105,7 +100,7 @@ Route::middleware(['auth', 'mirror.ttl'])->group(function () {
 });
 ```
 
-Prevent destructive actions while an impersonation session is active.
+Prevent destructive actions during impersonation:
 
 ```php
 Route::middleware('mirror.prevent')->group(function () {
@@ -116,8 +111,6 @@ Route::middleware('mirror.prevent')->group(function () {
 ---
 
 ## 6 Add Impersonation UI
-
-A simple banner can help administrators understand when they are acting as another user.
 
 ```blade
 @impersonating
@@ -134,6 +127,14 @@ A simple banner can help administrators understand when they are acting as anoth
 
 ---
 
+## 7 Verify
+
+1. Log in as an admin user and impersonate a test user — confirm the banner appears and `auth()->user()` returns the impersonated user
+2. Click "Exit impersonation" — confirm you return as the original admin
+3. Attempt a `mirror.prevent`-protected route while impersonating — confirm it is blocked
+
+---
+
 # Recommended Practices
 
 - Restrict impersonation through `canImpersonate()` and `canBeImpersonated()`.
@@ -145,14 +146,7 @@ A simple banner can help administrators understand when they are acting as anoth
 
 # Events
 
-The package emits events when impersonation sessions start and stop.
-
-```php
-Mirror\Events\ImpersonationStarted
-Mirror\Events\ImpersonationStopped
-```
-
-Example listener:
+Listen for `ImpersonationStarted` and `ImpersonationStopped` for audit logging:
 
 ```php
 Event::listen(ImpersonationStarted::class, function ($event) {
