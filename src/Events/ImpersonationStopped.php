@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mirror\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;

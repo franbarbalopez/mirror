@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mirror\Tests;
 
 use Orchestra\Testbench\Attributes\WithMigration;

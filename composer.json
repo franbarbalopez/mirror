@@ -20,13 +20,13 @@
         "illuminate/support": "^11.0|^12.0|^13.0"
     },
     "require-dev": {
-        "larastan/larastan": "^3.9.3",
-        "laravel/pint": "^1.29.0",
-        "orchestra/testbench": "^9.15.0|^10.9.0|^11.0",
-        "pestphp/pest": "^3.8.4|^4.4.2",
+        "larastan/larastan": "^3.9.6",
+        "laravel/pint": "^1.29.1",
+        "orchestra/testbench": "^9.15.0|^10.9.0|^11.1",
+        "pestphp/pest": "^3.8.4|^4.7.0",
         "pestphp/pest-plugin-laravel": "^3.2.0|^4.1",
-        "pestphp/pest-plugin-type-coverage": "^3.6.1|^4.0.3",
-        "rector/rector": "^2.3.8"
+        "pestphp/pest-plugin-type-coverage": "^3.6.1|^4.0.4",
+        "rector/rector": "^2.4.3"
     },
     "scripts": {
         "post-autoload-dump": [
