@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Mirror;
+namespace Mirror\Resolvers;
 
 use Closure;
+use Mirror\Guard;
+use Mirror\ImpersonationStartContext;
 
 final class ResolveTargetGuard
 {

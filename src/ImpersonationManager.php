@@ -18,6 +18,13 @@ use Mirror\Exceptions\ImpersonationExpired;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Preconditions\EnsureImpersonationIsNotExpired;
+use Mirror\Preconditions\EnsureImpersonationIsNotStarted;
+use Mirror\Preconditions\EnsureImpersonationIsStarted;
+use Mirror\Preconditions\EnsureImpersonatorCanImpersonate;
+use Mirror\Preconditions\EnsureTargetCanBeImpersonated;
+use Mirror\Resolvers\ResolveImpersonatorGuard;
+use Mirror\Resolvers\ResolveTargetGuard;
 
 class ImpersonationManager implements Mirror
 {

@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Mirror;
+namespace Mirror\Preconditions;
 
 use Closure;
 use Mirror\Contracts\Impersonatable;
 use Mirror\Exceptions\CanNotImpersonate;
+use Mirror\ImpersonationStartContext;
 
 final class EnsureImpersonatorCanImpersonate
 {
