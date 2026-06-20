@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Impersonation\Preconditions;
+namespace Mirror;
 
 use Closure;
 use Mirror\Contexts\ImpersonationStartContext;

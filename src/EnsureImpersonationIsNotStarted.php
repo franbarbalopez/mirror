@@ -1,11 +1,10 @@
 <?php
 
-namespace Mirror\Impersonation\Preconditions;
+namespace Mirror;
 
 use Closure;
 use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\SessionImpersonationStore;
 
 final readonly class EnsureImpersonationIsNotStarted
 {

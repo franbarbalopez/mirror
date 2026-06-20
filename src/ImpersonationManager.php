@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Pipeline;
 use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Contexts\ImpersonationStopContext;
-use Mirror\Contracts\Mirror as MirrorContract;
+use Mirror\Contracts\Mirror;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\CanNotBeImpersonated;
@@ -20,15 +20,8 @@ use Mirror\Exceptions\ImpersonationExpired;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Exceptions\UnsupportedGuard;
-use Mirror\Impersonation\Preconditions\EnsureImpersonationIsNotExpired;
-use Mirror\Impersonation\Preconditions\EnsureImpersonationIsNotStarted;
-use Mirror\Impersonation\Preconditions\EnsureImpersonationIsStarted;
-use Mirror\Impersonation\Preconditions\EnsureImpersonatorCanImpersonate;
-use Mirror\Impersonation\Preconditions\EnsureTargetCanBeImpersonated;
-use Mirror\Impersonation\Resolvers\ResolveImpersonatorGuard;
-use Mirror\Impersonation\Resolvers\ResolveTargetGuard;
 
-class ImpersonationManager implements MirrorContract
+class ImpersonationManager implements Mirror
 {
     /**
      * @var array{impersonate: list<class-string>, leave: list<class-string>}

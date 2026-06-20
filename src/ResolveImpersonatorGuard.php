@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Impersonation\Resolvers;
+namespace Mirror;
 
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Exceptions\UnsupportedGuard;
-use Mirror\Guard;
 
 final class ResolveImpersonatorGuard
 {

@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Impersonation\Preconditions;
+namespace Mirror;
 
 use Closure;
 use Mirror\Contexts\ImpersonationStopContext;
 use Mirror\Contracts\Mirror;
 use Mirror\Exceptions\ImpersonationExpired;
-use Mirror\SessionImpersonationStore;
 
 final readonly class EnsureImpersonationIsNotExpired
 {
