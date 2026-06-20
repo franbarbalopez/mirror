@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use Mirror\Contexts\ImpersonationStartContext;
+use Mirror\ImpersonationStartContext;
 
 it('exposes its initial values through getters', function (): void {
     $target = User::factory()->make();

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mirror;
 
 use Closure;
-use Mirror\Contexts\ImpersonationStopContext;
 use Mirror\Contracts\Mirror;
 use Mirror\Exceptions\ImpersonationExpired;
 
@@ -16,14 +15,14 @@ final readonly class EnsureImpersonationIsNotExpired
         private SessionImpersonationStore $store,
     ) {}
 
-    public function handle(ImpersonationStopContext $context, Closure $next): mixed
+    public function handle(bool $force, Closure $next): mixed
     {
-        if (! $context->force() && $this->impersonation->expired()) {
+        if (! $force && $this->impersonation->expired()) {
             $this->store->forget();
 
             throw new ImpersonationExpired('The impersonation session has expired.');
         }
 
-        return $next($context);
+        return $next($force);
     }
 }

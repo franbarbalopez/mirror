@@ -84,7 +84,7 @@ class UserImpersonationController extends Controller
 
     public function leave()
     {
-        Mirror::stop();
+        Mirror::leave();
 
         return redirect()->route('admin.users.index');
     }

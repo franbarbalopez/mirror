@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Contexts;
+namespace Mirror;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 

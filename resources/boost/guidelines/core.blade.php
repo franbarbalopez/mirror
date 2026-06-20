@@ -37,7 +37,7 @@ Mirror::impersonate($user, guard: 'web');
 
 ## Stopping Impersonation
 
-To return to the original user, call `Mirror::stop()`.
+To return to the original user, call `Mirror::leave()`.
 
 @verbatim
 <code-snippet name="Stop impersonation" lang="php">
@@ -45,14 +45,14 @@ use Mirror\Facades\Mirror;
 
 public function leave()
 {
-    Mirror::stop();
+    Mirror::leave();
 
     return redirect()->route('admin.users.index');
 }
 </code-snippet>
 @endverbatim
 
-If the impersonation has expired due to TTL restrictions, `forceStop()` can be used to terminate the session while still verifying integrity.
+If the impersonation has expired due to TTL restrictions, `forceLeave()` can be used to terminate the session while still verifying integrity.
 
 ---
 

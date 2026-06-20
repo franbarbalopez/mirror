@@ -81,7 +81,7 @@ use Mirror\Facades\Mirror;
 
 public function leave()
 {
-    Mirror::stop();
+    Mirror::leave();
 
     return redirect()->route('admin.users.index');
 }
@@ -89,7 +89,7 @@ public function leave()
 
 ## Security
 
-Impersonation sessions are protected with HMAC-SHA256 hashes using your app key. The hash covers the impersonator ID, guard name, start time, and redirect URL. On every `stop()` call, Mirror verifies this hash - if someone's tampered with the session, it throws an exception and clears everything.
+Impersonation sessions are protected with HMAC-SHA256 hashes using your app key. The hash covers the impersonator ID, guard name, start time, and redirect URL. On every `leave()` call, Mirror verifies this hash - if someone's tampered with the session, it throws an exception and clears everything.
 
 Configure TTL in `config/mirror.php` to automatically expire sessions after a set time.
 
@@ -121,13 +121,13 @@ Mirror resolves guards this way:
 ### Stopping Impersonation
 
 ```php
-Mirror::stop();
+Mirror::leave();
 
 // Force stop - bypasses TTL check but still verifies integrity
-Mirror::forceStop();
+Mirror::forceLeave();
 ```
 
-Use `forceStop()` when you need to end impersonation from admin actions or cleanup scripts - it skips the TTL check but still throws if the session's been tampered with.
+Use `forceLeave()` when you need to end impersonation from admin actions or cleanup scripts - it skips the TTL check but still throws if the session's been tampered with.
 
 ### Checking State
 
@@ -143,7 +143,7 @@ Mirror::leaveUrl(): ?string
 
 ### `mirror.ttl`
 
-Checks if the impersonation session has expired and automatically calls `stop()` if needed:
+Checks if the impersonation session has expired and automatically leaves impersonation if needed:
 
 ```php
 Route::middleware('mirror.ttl')->group(function () {
@@ -238,7 +238,7 @@ public function leave()
 {
     $leaveUrl = Mirror::leaveUrl();
 
-    Mirror::stop();
+    Mirror::leave();
 
     return redirect($leaveUrl ?? route('admin.users.index'));
 }
@@ -282,7 +282,7 @@ Auth::guard('admin')->login($admin);
 
 Mirror::impersonate($user); // uses 'admin' as the impersonator guard
 
-Mirror::stop(); // restores to 'admin' guard
+Mirror::leave(); // restores to 'admin' guard
 ```
 
 For the impersonated user, Mirror uses the explicit `guard` argument or model/provider inference. If the same model is attached to multiple session guards, Mirror uses the first matching guard. Pass the target guard explicitly when you need a specific one:

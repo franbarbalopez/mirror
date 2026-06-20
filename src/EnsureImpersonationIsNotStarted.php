@@ -3,7 +3,6 @@
 namespace Mirror;
 
 use Closure;
-use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
 
 final readonly class EnsureImpersonationIsNotStarted

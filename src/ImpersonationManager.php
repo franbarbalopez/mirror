@@ -8,8 +8,6 @@ use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Pipeline;
-use Mirror\Contexts\ImpersonationStartContext;
-use Mirror\Contexts\ImpersonationStopContext;
 use Mirror\Contracts\Mirror;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
@@ -87,21 +85,22 @@ class ImpersonationManager implements Mirror
      * @throws ImpersonationExpired
      * @throws ImpersonationNotActive
      */
-    public function stop(): void
+    public function leave(): void
     {
-        Pipeline::send(new ImpersonationStopContext)
-            ->through($this->pipes['leave'])
-            ->then(function (): void {
-                $this->restore();
-            });
+        $this->stop();
     }
 
     /**
      * @throws ImpersonationNotActive
      */
-    public function forceStop(): void
+    public function forceLeave(): void
     {
-        Pipeline::send(new ImpersonationStopContext(force: true))
+        $this->stop(force: true);
+    }
+
+    private function stop(bool $force = false): void
+    {
+        Pipeline::send($force)
             ->through($this->pipes['leave'])
             ->then(function (): void {
                 $this->restore();

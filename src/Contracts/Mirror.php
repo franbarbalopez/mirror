@@ -32,12 +32,12 @@ interface Mirror
      * @throws ImpersonationExpired
      * @throws ImpersonationNotActive
      */
-    public function stop(): void;
+    public function leave(): void;
 
     /**
      * @throws ImpersonationNotActive
      */
-    public function forceStop(): void;
+    public function forceLeave(): void;
 
     public function active(): bool;
 
