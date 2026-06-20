@@ -3,13 +3,13 @@
 namespace Mirror\Impersonation\Preconditions;
 
 use Closure;
-use Mirror\Contracts\ImpersonationStore;
+use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\ImpersonationStartContext;
+use Mirror\SessionImpersonationStore;
 
 final readonly class EnsureImpersonationIsNotStarted
 {
-    public function __construct(private ImpersonationStore $impersonation)
+    public function __construct(private SessionImpersonationStore $impersonation)
     {
         //
     }

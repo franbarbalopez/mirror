@@ -4,13 +4,13 @@ namespace Mirror\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Mirror\ImpersonationManager;
+use Mirror\Contracts\Mirror;
 use Symfony\Component\HttpFoundation\Response;
 
 readonly class PreventImpersonation
 {
     public function __construct(
-        private ImpersonationManager $impersonation,
+        private Mirror $impersonation,
     ) {}
 
     /**

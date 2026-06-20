@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Mirror\Impersonation\Preconditions;
 
 use Closure;
+use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Contracts\Impersonatable;
 use Mirror\Exceptions\CanNotImpersonate;
-use Mirror\ImpersonationStartContext;
 
 final class EnsureImpersonatorCanImpersonate
 {

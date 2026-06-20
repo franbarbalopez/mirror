@@ -6,9 +6,9 @@ namespace Mirror\Impersonation\Resolvers;
 
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Mirror\Contexts\ImpersonationStartContext;
 use Mirror\Exceptions\UnsupportedGuard;
 use Mirror\Guard;
-use Mirror\ImpersonationStartContext;
 
 final class ResolveImpersonatorGuard
 {

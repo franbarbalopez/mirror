@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Mirror\Impersonation\Preconditions;
 
 use Closure;
-use Mirror\Contracts\ImpersonationStore;
+use Mirror\Contexts\ImpersonationStopContext;
+use Mirror\Contracts\Mirror;
 use Mirror\Exceptions\ImpersonationExpired;
-use Mirror\ImpersonationManager;
-use Mirror\ImpersonationStopContext;
+use Mirror\SessionImpersonationStore;
 
 final readonly class EnsureImpersonationIsNotExpired
 {
     public function __construct(
-        private ImpersonationManager $impersonation,
-        private ImpersonationStore $store,
+        private Mirror $impersonation,
+        private SessionImpersonationStore $store,
     ) {}
 
     public function handle(ImpersonationStopContext $context, Closure $next): mixed

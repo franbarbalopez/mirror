@@ -8,8 +8,9 @@ use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Pipeline;
-use Mirror\Contracts\ImpersonationStore;
-use Mirror\Data\ImpersonationPayload;
+use Mirror\Contexts\ImpersonationStartContext;
+use Mirror\Contexts\ImpersonationStopContext;
+use Mirror\Contracts\Mirror as MirrorContract;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\CanNotBeImpersonated;
@@ -27,7 +28,7 @@ use Mirror\Impersonation\Preconditions\EnsureTargetCanBeImpersonated;
 use Mirror\Impersonation\Resolvers\ResolveImpersonatorGuard;
 use Mirror\Impersonation\Resolvers\ResolveTargetGuard;
 
-class ImpersonationManager
+class ImpersonationManager implements MirrorContract
 {
     /**
      * @var array{impersonate: list<class-string>, leave: list<class-string>}
@@ -49,7 +50,7 @@ class ImpersonationManager
     private ?Authenticatable $impersonator = null;
 
     public function __construct(
-        private readonly ImpersonationStore $store,
+        private readonly SessionImpersonationStore $store,
         private readonly AuthManager $auth,
     ) {}
 

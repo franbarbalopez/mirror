@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mirror;
+namespace Mirror\Contexts;
 
 final readonly class ImpersonationStopContext
 {

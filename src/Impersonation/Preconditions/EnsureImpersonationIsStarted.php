@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Mirror\Impersonation\Preconditions;
 
 use Closure;
-use Mirror\Contracts\ImpersonationStore;
+use Mirror\Contexts\ImpersonationStopContext;
 use Mirror\Exceptions\ImpersonationNotActive;
-use Mirror\ImpersonationStopContext;
+use Mirror\SessionImpersonationStore;
 
 final readonly class EnsureImpersonationIsStarted
 {
-    public function __construct(private ImpersonationStore $impersonation)
+    public function __construct(private SessionImpersonationStore $impersonation)
     {
         //
     }

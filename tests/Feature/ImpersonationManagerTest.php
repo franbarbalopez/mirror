@@ -6,8 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
-use Mirror\Contracts\ImpersonationStore;
-use Mirror\Data\ImpersonationPayload;
+use Mirror\Contracts\Mirror as MirrorContract;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\CanNotBeImpersonated;
@@ -20,6 +19,8 @@ use Mirror\Exceptions\UnsupportedGuard;
 use Mirror\Facades\Mirror;
 use Mirror\Guard;
 use Mirror\ImpersonationManager;
+use Mirror\ImpersonationPayload;
+use Mirror\SessionImpersonationStore;
 
 use function Pest\Laravel\actingAs;
 
@@ -245,7 +246,8 @@ it('infers the impersonated guard from the target model', function (): void {
     $target = User::factory()->create();
 
     expect(Guard::from($target))->toBe('web')
-        ->and(app(ImpersonationManager::class))->toBeInstanceOf(ImpersonationManager::class);
+        ->and(app(ImpersonationManager::class))->toBeInstanceOf(ImpersonationManager::class)
+        ->and(app(MirrorContract::class))->toBeInstanceOf(ImpersonationManager::class);
 });
 
 it('uses the target model guardName method before provider inference', function (): void {
@@ -416,7 +418,7 @@ it('returns null when retrieving a user from a guard without provider', function
         'provider' => null,
     ]);
 
-    app(ImpersonationStore::class)->put(new ImpersonationPayload(
+    app(SessionImpersonationStore::class)->put(new ImpersonationPayload(
         impersonatorId: 1,
         impersonatorGuard: 'providerless',
         impersonatedId: 2,
@@ -433,7 +435,7 @@ it('returns null when reading the impersonated user from a guard without an auth
         'provider' => 'users',
     ]);
 
-    app(ImpersonationStore::class)->put(new ImpersonationPayload(
+    app(SessionImpersonationStore::class)->put(new ImpersonationPayload(
         impersonatorId: 1,
         impersonatorGuard: 'web',
         impersonatedId: 2,

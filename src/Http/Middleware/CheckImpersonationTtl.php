@@ -5,15 +5,15 @@ namespace Mirror\Http\Middleware;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Mirror\Data\ImpersonationPayload;
+use Mirror\Contracts\Mirror;
 use Mirror\Events\ImpersonationExpired;
-use Mirror\ImpersonationManager;
+use Mirror\ImpersonationPayload;
 use Symfony\Component\HttpFoundation\Response;
 
 readonly class CheckImpersonationTtl
 {
     public function __construct(
-        private ImpersonationManager $impersonation
+        private Mirror $impersonation
     ) {}
 
     /**

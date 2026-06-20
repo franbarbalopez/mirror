@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Support;
+namespace Mirror;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Blade;
 use Mirror\Contracts\Impersonatable;
-use Mirror\ImpersonationManager;
+use Mirror\Contracts\Mirror;
 
 final readonly class BladeDirectivesRegistrar
 {
     public function __construct(
-        private ImpersonationManager $impersonation,
+        private Mirror $impersonation,
     ) {}
 
     public function register(): void

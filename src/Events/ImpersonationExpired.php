@@ -7,7 +7,7 @@ namespace Mirror\Events;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Mirror\Data\ImpersonationPayload;
+use Mirror\ImpersonationPayload;
 
 final class ImpersonationExpired
 {

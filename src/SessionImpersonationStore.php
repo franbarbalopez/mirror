@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Stores;
+namespace Mirror;
 
 use Illuminate\Contracts\Session\Session;
-use Mirror\Contracts\ImpersonationStore;
-use Mirror\Data\ImpersonationPayload;
 use Mirror\Exceptions\TamperedImpersonationState;
-use Mirror\Support\ImpersonationHasher;
 
-final readonly class SessionImpersonationStore implements ImpersonationStore
+final readonly class SessionImpersonationStore
 {
     public function __construct(
         private Session $session,

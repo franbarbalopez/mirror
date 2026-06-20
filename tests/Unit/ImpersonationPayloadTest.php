@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Carbon;
-use Mirror\Data\ImpersonationPayload;
+use Mirror\ImpersonationPayload;
 
 it('determines whether it has expired', function (): void {
     Carbon::setTestNow(Carbon::createFromTimestamp(100));

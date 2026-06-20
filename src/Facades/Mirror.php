@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Mirror\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Mirror\Data\ImpersonationPayload;
 use Mirror\ImpersonationManager;
+use Mirror\ImpersonationPayload;
 
 /**
  * @method static void impersonate(\Illuminate\Contracts\Auth\Authenticatable $target, ?string $guard = null, ?string $leaveUrl = null)

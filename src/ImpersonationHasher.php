@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Support;
+namespace Mirror;
 
 use JsonException;
-use Mirror\Data\ImpersonationPayload;
 
 final readonly class ImpersonationHasher
 {

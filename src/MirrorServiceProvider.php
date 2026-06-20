@@ -8,13 +8,10 @@ use Illuminate\Config\Repository;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Mirror\Contracts\ImpersonationStore;
+use Mirror\Contracts\Mirror;
 use Mirror\Http\Middleware\CheckImpersonationTtl;
 use Mirror\Http\Middleware\PreventImpersonation;
 use Mirror\Http\Middleware\RequireImpersonation;
-use Mirror\Stores\SessionImpersonationStore;
-use Mirror\Support\BladeDirectivesRegistrar;
-use Mirror\Support\ImpersonationHasher;
 
 class MirrorServiceProvider extends ServiceProvider
 {
@@ -31,10 +28,11 @@ class MirrorServiceProvider extends ServiceProvider
             (string) $app->make(Repository::class)->get('app.key'),
         ));
 
-        $this->app->scoped(ImpersonationStore::class, SessionImpersonationStore::class);
+        $this->app->scoped(SessionImpersonationStore::class);
+        $this->app->scoped(Mirror::class, ImpersonationManager::class);
         $this->app->scoped(ImpersonationManager::class);
 
-        $this->app->alias(ImpersonationManager::class, 'mirror');
+        $this->app->alias(Mirror::class, 'mirror');
     }
 
     /**

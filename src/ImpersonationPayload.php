@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Data;
+namespace Mirror;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Carbon;
