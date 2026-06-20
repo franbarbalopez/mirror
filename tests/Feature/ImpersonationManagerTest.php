@@ -1,0 +1,445 @@
+<?php
+
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Session;
+use Mirror\Contracts\ImpersonationStore;
+use Mirror\Data\ImpersonationPayload;
+use Mirror\Events\ImpersonationStarted;
+use Mirror\Events\ImpersonationStopped;
+use Mirror\Exceptions\CanNotBeImpersonated;
+use Mirror\Exceptions\CanNotImpersonate;
+use Mirror\Exceptions\ImpersonationAlreadyActive;
+use Mirror\Exceptions\ImpersonationExpired;
+use Mirror\Exceptions\ImpersonationNotActive;
+use Mirror\Exceptions\TamperedImpersonationState;
+use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Facades\Mirror;
+use Mirror\Guard;
+use Mirror\ImpersonationManager;
+
+use function Pest\Laravel\actingAs;
+
+it('starts impersonation with a signed payload and dispatches an event', function (): void {
+    Event::fake();
+
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+
+    actingAs($admin);
+
+    Mirror::impersonate($target, leaveUrl: '/admin/users');
+
+    expect(Auth::id())->toBe($target->id)
+        ->and(app(ImpersonationManager::class)->active())->toBeTrue()
+        ->and(app(ImpersonationManager::class)->impersonatorId())->toBe($admin->id)
+        ->and(app(ImpersonationManager::class)->leaveUrl())->toBe('/admin/users')
+        ->and(Session::has('mirror.impersonation.payload'))->toBeTrue()
+        ->and(Session::has('mirror.impersonation.signature'))->toBeTrue();
+
+    $payload = app(ImpersonationManager::class)->payload();
+
+    expect($payload)->toBeInstanceOf(ImpersonationPayload::class)
+        ->and($payload->impersonatorGuard)->toBe('web')
+        ->and($payload->impersonatedGuard)->toBe('web')
+        ->and($payload->impersonatedId)->toBe($target->id);
+
+    Event::assertDispatched(ImpersonationStarted::class, fn (ImpersonationStarted $event): bool => $event->impersonator->is($admin)
+        && $event->impersonated->is($target)
+        && $event->payload->impersonatorGuard === 'web'
+        && $event->payload->impersonatedGuard === 'web');
+});
+
+it('stops impersonation and restores the original user', function (): void {
+    Event::fake();
+
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+
+    actingAs($admin);
+
+    Mirror::impersonate($target);
+
+    Mirror::stop();
+
+    expect(Auth::id())->toBe($admin->id)
+        ->and(app(ImpersonationManager::class)->active())->toBeFalse()
+        ->and(Session::has('mirror.impersonation.payload'))->toBeFalse()
+        ->and(Session::has('mirror.impersonation.signature'))->toBeFalse();
+
+    Event::assertDispatched(ImpersonationStopped::class, fn (ImpersonationStopped $event): bool => $event->impersonator->is($admin)
+        && $event->impersonated->is($target));
+});
+
+it('returns the impersonator and current impersonated user', function (): void {
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate($target);
+
+    expect(app(ImpersonationManager::class)->impersonator()?->is($admin))->toBeTrue()
+        ->and(app(ImpersonationManager::class)->impersonated()?->is($target))->toBeTrue();
+});
+
+it('caches the impersonator model in memory for the current request', function (): void {
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate($target);
+
+    $first = Mirror::impersonator();
+    $second = Mirror::impersonator();
+
+    expect($first)->toBe($second);
+});
+
+it('returns null values when no impersonation is active', function (): void {
+    Config::set('mirror.ttl', 60);
+
+    expect(app(ImpersonationManager::class)->payload())->toBeNull()
+        ->and(app(ImpersonationManager::class)->impersonator())->toBeNull()
+        ->and(app(ImpersonationManager::class)->impersonated())->toBeNull()
+        ->and(app(ImpersonationManager::class)->impersonatorId())->toBeNull()
+        ->and(app(ImpersonationManager::class)->leaveUrl())->toBeNull()
+        ->and(app(ImpersonationManager::class)->expired())->toBeFalse();
+});
+
+it('supports explicit guard configuration and custom session keys', function (): void {
+    Config::set('mirror.session.key', 'custom.impersonation');
+    Config::set('mirror.redirects.expired', '/expired');
+
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate($target);
+
+    expect(Session::has('custom.impersonation.payload'))->toBeTrue()
+        ->and(Session::has('custom.impersonation.signature'))->toBeTrue()
+        ->and(app(ImpersonationManager::class)->expiredRedirectUrl())->toBe('/expired');
+});
+
+it('rejects nested impersonation', function (): void {
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+
+    Mirror::impersonate(User::factory()->create());
+    Mirror::impersonate(User::factory()->create());
+})->throws(ImpersonationAlreadyActive::class);
+
+it('requires an impersonator that can impersonate', function (): void {
+    $admin = new class extends User
+    {
+        public function canImpersonate(): bool
+        {
+            return false;
+        }
+    };
+
+    $admin->forceFill(['id' => 1, 'email' => 'admin@test.com']);
+
+    actingAs($admin);
+
+    Mirror::impersonate(User::factory()->create());
+})->throws(CanNotImpersonate::class);
+
+it('requires a target that can be impersonated', function (): void {
+    $target = new class extends User
+    {
+        public function canBeImpersonated(): bool
+        {
+            return false;
+        }
+    };
+
+    $target->forceFill(['id' => 2, 'email' => 'target@test.com']);
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+
+    Mirror::impersonate($target);
+})->throws(CanNotBeImpersonated::class);
+
+it('throws when stopping without active impersonation', function (): void {
+    Mirror::stop();
+})->throws(ImpersonationNotActive::class);
+
+it('throws when force stopping without active impersonation', function (): void {
+    Mirror::forceStop();
+})->throws(ImpersonationNotActive::class);
+
+it('throws when stopping an expired impersonation', function (): void {
+    Config::set('mirror.ttl', 60);
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    Carbon::setTestNow(Carbon::now()->addSeconds(61));
+
+    Mirror::stop();
+})->throws(ImpersonationExpired::class);
+
+it('allows force stopping an expired impersonation', function (): void {
+    Config::set('mirror.ttl', 60);
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    Carbon::setTestNow(Carbon::now()->addSeconds(61));
+
+    Mirror::forceStop();
+
+    expect(auth()->id())->toBe($admin->id)
+        ->and(app(ImpersonationManager::class)->active())->toBeFalse();
+});
+
+it('detects tampered payloads', function (): void {
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    $payload = Session::get('mirror.impersonation.payload');
+    $payload['impersonator_id'] = 999;
+    Session::put('mirror.impersonation.payload', $payload);
+
+    Mirror::payload();
+})->throws(TamperedImpersonationState::class);
+
+it('detects a missing signature', function (): void {
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    Session::forget('mirror.impersonation.signature');
+
+    Mirror::payload();
+})->throws(TamperedImpersonationState::class);
+
+it('rejects unsupported non-stateful guards', function (): void {
+    Config::set('auth.guards.api', [
+        'driver' => 'token',
+        'provider' => 'users',
+    ]);
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+
+    Mirror::impersonate(User::factory()->create(), guard: 'api');
+})->throws(UnsupportedGuard::class);
+
+it('infers the impersonated guard from the target model', function (): void {
+    $target = User::factory()->create();
+
+    expect(Guard::from($target))->toBe('web')
+        ->and(app(ImpersonationManager::class))->toBeInstanceOf(ImpersonationManager::class);
+});
+
+it('uses the target model guardName method before provider inference', function (): void {
+    Config::set('auth.guards.customer', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    $target = new class extends User
+    {
+        public function guardName(): string
+        {
+            return 'customer';
+        }
+    };
+
+    expect(Guard::from($target))->toBe('customer');
+});
+
+it('uses the target model guard_name attribute before provider inference', function (): void {
+    Config::set('auth.guards.customer', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    $target = User::factory()->make();
+    $target->forceFill(['guard_name' => 'customer']);
+
+    expect(Guard::from($target))->toBe('customer');
+});
+
+it('uses the target model guard_name default property before provider inference', function (): void {
+    Config::set('auth.guards.customer', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    $target = new class extends User
+    {
+        protected string $guard_name = 'customer';
+    };
+
+    expect(Guard::from($target))->toBe('customer');
+});
+
+it('uses the first guard when the target model defines multiple guards', function (): void {
+    Config::set('auth.guards.customer', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    $target = new class extends User
+    {
+        /**
+         * @return list<string>
+         */
+        public function guardName(): array
+        {
+            return ['web', 'customer'];
+        }
+    };
+
+    expect(Guard::from($target))->toBe('web');
+});
+
+it('rejects non-stateful guards defined by the target model', function (): void {
+    Config::set('auth.guards.api', [
+        'driver' => 'token',
+        'provider' => 'users',
+    ]);
+
+    $target = new class extends User
+    {
+        public function guardName(): string
+        {
+            return 'api';
+        }
+    };
+
+    Guard::from($target);
+})->throws(UnsupportedGuard::class);
+
+it('rejects impersonation when no session guard is authenticated', function (): void {
+    Config::set('auth.guards.api', [
+        'driver' => 'token',
+        'provider' => 'users',
+    ]);
+
+    Mirror::impersonate(User::factory()->create());
+})->throws(UnsupportedGuard::class);
+
+it('throws when the impersonated guard cannot be inferred', function (): void {
+    Config::set('auth.guards.api', [
+        'driver' => 'token',
+        'provider' => 'users',
+    ]);
+    Config::set('auth.guards.providerless', [
+        'driver' => 'session',
+        'provider' => null,
+    ]);
+    Config::set('auth.providers.users.model', stdClass::class);
+
+    Guard::from(User::factory()->create());
+})->throws(UnsupportedGuard::class);
+
+it('respects an explicit impersonated guard', function (): void {
+    Config::set('auth.guards.admin', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+
+    actingAs($admin, 'admin');
+    Auth::shouldUse('web');
+
+    Mirror::impersonate($target, guard: 'web');
+
+    $payload = Mirror::payload();
+
+    expect($payload?->impersonatorGuard)->toBe('admin')
+        ->and($payload?->impersonatedGuard)->toBe('web');
+});
+
+it('uses the first inferred impersonated guard when multiple guards match', function (): void {
+    Config::set('auth.guards.customer', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    actingAs(User::factory()->create());
+
+    Mirror::impersonate(User::factory()->create());
+
+    expect(Mirror::payload()?->impersonatedGuard)->toBe('web');
+});
+
+it('uses model inference without a config guard fallback', function (): void {
+    Config::set('auth.guards.customer', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+    actingAs(User::factory()->create());
+
+    Mirror::impersonate(User::factory()->create());
+
+    expect(Mirror::payload()?->impersonatedGuard)->toBe('web');
+});
+
+it('resolves the impersonator guard from the authenticated guard', function (): void {
+    Config::set('auth.guards.admin', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    actingAs(User::factory()->create(), 'admin');
+    Auth::shouldUse('web');
+
+    Mirror::impersonate(User::factory()->create(), guard: 'web');
+
+    expect(Mirror::payload()?->impersonatorGuard)->toBe('admin');
+});
+
+it('returns null when retrieving a user from a guard without provider', function (): void {
+    Config::set('auth.guards.providerless', [
+        'driver' => 'session',
+        'provider' => null,
+    ]);
+
+    app(ImpersonationStore::class)->put(new ImpersonationPayload(
+        impersonatorId: 1,
+        impersonatorGuard: 'providerless',
+        impersonatedId: 2,
+        impersonatedGuard: 'web',
+        startedAt: (int) Carbon::now()->timestamp,
+    ));
+
+    expect(Mirror::impersonator())->toBeNull();
+});
+
+it('returns null when reading the impersonated user from a guard without an authenticated user', function (): void {
+    Config::set('auth.guards.api', [
+        'driver' => 'token',
+        'provider' => 'users',
+    ]);
+
+    app(ImpersonationStore::class)->put(new ImpersonationPayload(
+        impersonatorId: 1,
+        impersonatorGuard: 'web',
+        impersonatedId: 2,
+        impersonatedGuard: 'api',
+        startedAt: (int) Carbon::now()->timestamp,
+    ));
+
+    expect(Mirror::impersonated())->toBeNull();
+});

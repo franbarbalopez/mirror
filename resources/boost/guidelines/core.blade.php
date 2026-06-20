@@ -10,7 +10,7 @@ The package protects impersonation sessions using HMAC-SHA256 verification, conf
 
 ## Starting Impersonation
 
-An impersonation session begins by calling the `Mirror::start()` method with the target user.
+An impersonation session begins by calling the `Mirror::impersonate()` method with the target user.
 
 @verbatim
 <code-snippet name="Start impersonation" lang="php">
@@ -18,14 +18,20 @@ use Mirror\Facades\Mirror;
 
 public function impersonate(User $user)
 {
-    Mirror::start($user);
+    Mirror::impersonate($user);
 
     return redirect()->route('dashboard');
 }
 </code-snippet>
 @endverbatim
 
-The active authentication guard is detected automatically.
+The impersonator guard is resolved from the currently authenticated session guard. The impersonated guard can be passed explicitly with `guard`, read from the target model's `guardName()` method or `guard_name`, or inferred from the target model's auth provider.
+
+@verbatim
+<code-snippet name="Start with explicit guard" lang="php">
+Mirror::impersonate($user, guard: 'web');
+</code-snippet>
+@endverbatim
 
 ---
 
@@ -54,21 +60,19 @@ If the impersonation has expired due to TTL restrictions, `forceStop()` can be u
 
 Your user model should define the authorization logic that determines who can impersonate others.
 
-An optional trait is provided:
+A contract is provided:
 
-`Mirror\Concerns\Impersonatable`
+`Mirror\Contracts\Impersonatable`
 
-Override the following methods to implement your own rules.
+Implement the following methods to define your own rules.
 
 @verbatim
 <code-snippet name="Impersonatable user model" lang="php">
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Mirror\Concerns\Impersonatable;
+use Mirror\Contracts\Impersonatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
-    use Impersonatable;
-
     public function canImpersonate(): bool
     {
         return $this->hasRole('admin');
@@ -82,7 +86,7 @@ class User extends Authenticatable
 </code-snippet>
 @endverbatim
 
-If these methods are not implemented, impersonation will be allowed by default.
+Both the impersonator and impersonated models must implement `Impersonatable`.
 
 ---
 
@@ -142,9 +146,9 @@ The facade exposes helper methods for determining whether impersonation is activ
 
 @verbatim
 <code-snippet name="Check impersonation state" lang="php">
-Mirror::isImpersonating();
+Mirror::active();
 
-Mirror::getImpersonator();
+Mirror::impersonator();
 
 Mirror::impersonatorId();
 </code-snippet>

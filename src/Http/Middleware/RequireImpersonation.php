@@ -4,11 +4,15 @@ namespace Mirror\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Mirror\Facades\Mirror;
+use Mirror\ImpersonationManager;
 use Symfony\Component\HttpFoundation\Response;
 
-class RequireImpersonation
+readonly class RequireImpersonation
 {
+    public function __construct(
+        private ImpersonationManager $impersonation,
+    ) {}
+
     /**
      * Handle an incoming request.
      *
@@ -16,7 +20,7 @@ class RequireImpersonation
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Mirror::isImpersonating()) {
+        if (! $this->impersonation->active()) {
             abort(403, 'This action requires active impersonation.');
         }
 

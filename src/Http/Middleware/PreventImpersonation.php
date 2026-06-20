@@ -4,11 +4,15 @@ namespace Mirror\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Mirror\Facades\Mirror;
+use Mirror\ImpersonationManager;
 use Symfony\Component\HttpFoundation\Response;
 
-class PreventImpersonation
+readonly class PreventImpersonation
 {
+    public function __construct(
+        private ImpersonationManager $impersonation,
+    ) {}
+
     /**
      * Handle an incoming request.
      *
@@ -16,7 +20,7 @@ class PreventImpersonation
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Mirror::isImpersonating()) {
+        if ($this->impersonation->active()) {
             abort(403, 'This action is not allowed while impersonating another user.');
         }
 

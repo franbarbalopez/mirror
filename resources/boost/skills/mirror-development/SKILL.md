@@ -32,12 +32,10 @@ php artisan vendor:publish --tag=mirror
 Define the authorization rules that control who can impersonate others.
 
 ```php
-use Mirror\Concerns\Impersonatable;
+use Mirror\Contracts\Impersonatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
-    use Impersonatable;
-
     public function canImpersonate(): bool
     {
         return $this->hasRole('admin');
@@ -70,16 +68,16 @@ Route::post('/impersonation/leave', [UserImpersonationController::class, 'leave'
 
 ## 4 Create Controller
 
-Implement a controller that starts and ends the impersonation session.
+Implement a controller that impersonates users and ends the impersonation session.
 
 ```php
 use Mirror\Facades\Mirror;
 
 class UserImpersonationController extends Controller
 {
-    public function start(User $user)
+    public function impersonate(User $user)
     {
-        Mirror::start($user);
+        Mirror::impersonate($user);
 
         return redirect()->route('dashboard');
     }
@@ -91,6 +89,12 @@ class UserImpersonationController extends Controller
         return redirect()->route('admin.users.index');
     }
 }
+```
+
+Mirror resolves the impersonator guard from the currently authenticated session guard. The impersonated guard can come from the explicit `guard` argument, the target model's `guardName()` method or `guard_name`, or auth provider inference:
+
+```php
+Mirror::impersonate($user, guard: 'web');
 ```
 
 ---

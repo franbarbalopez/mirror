@@ -5,34 +5,38 @@ namespace Mirror\Http\Middleware;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Mirror\Exceptions\ImpersonationException;
-use Mirror\Impersonator;
+use Mirror\Data\ImpersonationPayload;
+use Mirror\Events\ImpersonationExpired;
+use Mirror\ImpersonationManager;
 use Symfony\Component\HttpFoundation\Response;
 
 readonly class CheckImpersonationTtl
 {
     public function __construct(
-        private Impersonator $impersonator
+        private ImpersonationManager $impersonation
     ) {}
 
     /**
      * Handle an incoming request.
      *
      * @param  Closure(Request): (Response)  $next
-     *
-     * @throws ImpersonationException
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $this->impersonator->isImpersonating()) {
+        if (! $this->impersonation->active()) {
             return $next($request);
         }
 
-        if ($this->impersonator->isExpired()) {
-            $redirectUrl = $this->impersonator->getLeaveRedirectUrl()
-                ?? $this->impersonator->getDefaultRedirectUrl();
+        if ($this->impersonation->expired()) {
+            $payload = $this->impersonation->payload();
+            $redirectUrl = $this->impersonation->leaveUrl()
+                ?? $this->impersonation->expiredRedirectUrl();
 
-            $this->impersonator->forceStop();
+            $this->impersonation->forceStop();
+
+            if ($payload instanceof ImpersonationPayload) {
+                ImpersonationExpired::dispatch($payload);
+            }
 
             /** @var RedirectResponse $response */
             $response = redirect($redirectUrl);

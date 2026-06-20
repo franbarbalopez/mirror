@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Mirror\Support;
+
+use JsonException;
+use Mirror\Data\ImpersonationPayload;
+
+final readonly class ImpersonationHasher
+{
+    public function __construct(
+        private string $key,
+    ) {}
+
+    /**
+     * @throws JsonException
+     */
+    public function sign(ImpersonationPayload $payload): string
+    {
+        return hash_hmac('sha256', $this->serialize($payload), $this->key);
+    }
+
+    public function verify(ImpersonationPayload $payload, string $signature): bool
+    {
+        return hash_equals($this->sign($payload), $signature);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    private function serialize(ImpersonationPayload $payload): string
+    {
+        return json_encode($payload->toArray(), JSON_THROW_ON_ERROR);
+    }
+}

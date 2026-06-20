@@ -8,6 +8,7 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Mirror\Data\ImpersonationPayload;
 
 class ImpersonationStarted
 {
@@ -21,6 +22,6 @@ class ImpersonationStarted
     public function __construct(
         public Authenticatable $impersonator,
         public Authenticatable $impersonated,
-        public string $guardName,
+        public ImpersonationPayload $payload,
     ) {}
 }

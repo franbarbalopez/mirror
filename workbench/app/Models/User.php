@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Mirror\Concerns\Impersonatable;
+use Mirror\Contracts\Impersonatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
-    use HasFactory, Impersonatable, Notifiable;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -43,5 +43,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function canImpersonate(): bool
+    {
+        return true;
+    }
+
+    public function canBeImpersonated(): bool
+    {
+        return true;
     }
 }

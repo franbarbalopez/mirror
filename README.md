@@ -39,16 +39,14 @@ php artisan vendor:publish --tag=mirror
 
 ## Quick Start
 
-### 1. Add Trait to User Model
+### 1. Implement the Impersonatable Contract
 
 ```php
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Mirror\Concerns\Impersonatable;
+use Mirror\Contracts\Impersonatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
-    use Impersonatable;
-
     public function canImpersonate(): bool
     {
         return $this->hasRole('admin');
@@ -61,7 +59,7 @@ class User extends Authenticatable
 }
 ```
 
-**Important:** If you don't implement `canImpersonate()`, everyone can impersonate everyone. The trait returns `true` by default.
+**Important:** models participating in impersonation must implement `Impersonatable`.
 
 ### 2. Start Impersonating
 
@@ -70,7 +68,7 @@ use Mirror\Facades\Mirror;
 
 public function impersonate(User $user)
 {
-    Mirror::start($user);
+    Mirror::impersonate($user);
 
     return redirect()->route('dashboard');
 }
@@ -79,6 +77,8 @@ public function impersonate(User $user)
 ### 3. Stop Impersonating
 
 ```php
+use Mirror\Facades\Mirror;
+
 public function leave()
 {
     Mirror::stop();
@@ -100,31 +100,23 @@ Configure TTL in `config/mirror.php` to automatically expire sessions after a se
 By user instance:
 
 ```php
-Mirror::start($user);
+Mirror::impersonate($user);
 
-// With redirect URLs
-$redirectUrl = Mirror::start(
-    user: $targetUser,
-    leaveRedirectUrl: route('admin.users.index'),
-    startRedirectUrl: route('dashboard')
+// With an explicit impersonated guard and a leave URL
+Mirror::impersonate(
+    target: $targetUser,
+    guard: 'web',
+    leaveUrl: route('admin.users.index'),
 );
-
-return redirect($redirectUrl);
 ```
 
-By primary key (works with int, UUID, ULID, etc.):
+Mirror resolves guards this way:
 
-```php
-Mirror::startByKey(123);
-
-Mirror::startByKey('550e8400-e29b-41d4-a716-446655440000');
-```
-
-By email:
-
-```php
-Mirror::startByEmail('user@example.com');
-```
+- The impersonator guard is the currently authenticated session guard.
+- The impersonated guard is the explicit `guard` argument when provided.
+- Without `guard`, Mirror uses the impersonated model's `guardName()` method, `guard_name` attribute, or `guard_name` default property when present.
+- Finally, Mirror infers the guard from the impersonated model's auth provider.
+- If multiple session guards match the same model, Mirror uses the first matching guard.
 
 ### Stopping Impersonation
 
@@ -140,19 +132,11 @@ Use `forceStop()` when you need to end impersonation from admin actions or clean
 ### Checking State
 
 ```php
-Mirror::isImpersonating(): bool
-Mirror::getImpersonator(): ?Authenticatable
+Mirror::active(): bool
+Mirror::impersonator(): ?Authenticatable
+Mirror::impersonated(): ?Authenticatable
 Mirror::impersonatorId(): int|string|null
-Mirror::getLeaveRedirectUrl(): ?string
-```
-
-### Aliases
-
-```php
-Mirror::as($user);           // same as start()
-Mirror::leave();             // same as stop()
-Mirror::impersonating();     // same as isImpersonating()
-Mirror::impersonator();      // same as getImpersonator()
+Mirror::leaveUrl(): ?string
 ```
 
 ## Middleware
@@ -199,15 +183,13 @@ Protects destructive actions or sensitive settings that should only be accessed 
 
 ## Authorization
 
-The `Impersonatable` trait provides two methods that both return `true` by default. Override them to add your own logic:
+The `Impersonatable` contract defines the two authorization methods Mirror requires:
 
 ```php
-use Mirror\Concerns\Impersonatable;
+use Mirror\Contracts\Impersonatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
-    use Impersonatable;
-
     public function canImpersonate(): bool
     {
         return $this->hasRole('admin');
@@ -220,10 +202,10 @@ class User extends Authenticatable
 }
 ```
 
-You don't need the trait - Mirror will look for these methods on your user model regardless:
+Both the logged-in impersonator and the target user must implement the contract:
 
 ```php
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
     public function canImpersonate(): bool
     {
@@ -244,24 +226,25 @@ You can control where users go when starting and stopping impersonation:
 ```php
 public function impersonate(User $user)
 {
-    $redirectUrl = Mirror::start(
-        user: $user,
-        leaveRedirectUrl: route('admin.users.index'),  // where to go when they stop
-        startRedirectUrl: route('dashboard')            // where to go right now
+    Mirror::impersonate(
+        target: $user,
+        leaveUrl: route('admin.users.index'),
     );
 
-    return redirect($redirectUrl);
+    return redirect()->route('dashboard');
 }
 
 public function leave()
 {
+    $leaveUrl = Mirror::leaveUrl();
+
     Mirror::stop();
 
-    return redirect(Mirror::getLeaveRedirectUrl());
+    return redirect($leaveUrl ?? route('admin.users.index'));
 }
 ```
 
-If you don't specify `leaveRedirectUrl`, it defaults to the current URL where `start()` was called.
+If you don't specify `leaveUrl`, `leaveUrl()` returns `null`.
 
 ## Events
 
@@ -270,9 +253,7 @@ Mirror dispatches two events you can listen to:
 - `Mirror\Events\ImpersonationStarted`
 - `Mirror\Events\ImpersonationStopped`
 
-Both events contain the impersonator, the target user, and the guard name. Good for audit logs or triggering workflows.
-
-Events are dispatched **after the response** is sent to the client, ensuring that critical impersonation operations complete without delay. This is especially important for middleware like `mirror.ttl` that may run on every request.
+Both events contain the impersonator, the target user, and the signed impersonation payload. Good for audit logs or triggering workflows.
 
 ```php
 use Mirror\Events\ImpersonationStarted;
@@ -282,46 +263,33 @@ Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event
     Log::info('User impersonation started', [
         'impersonator_id' => $event->impersonator->id,
         'impersonated_id' => $event->impersonated->id,
-        'guard' => $event->guardName,
+        'impersonator_guard' => $event->payload->impersonatorGuard,
+        'impersonated_guard' => $event->payload->impersonatedGuard,
     ]);
 });
 ```
 
 ## Performance & Optimization
 
-Mirror is optimized for high-performance applications:
-
-### Request-Scoped Caching
-
-The impersonator model is cached within a single request to avoid redundant database queries:
-
-```php
-// This first call will query the database
-$impersonator = Mirror::getImpersonator();
-
-// Subsequent calls in the same request use the cached instance, therefore this one will not:
-$impersonator = Mirror::getImpersonator();
-```
-
-This is particularly beneficial for middleware like `mirror.ttl` that run on every request.
-
-### Deferred Event Dispatching
-
-Impersonation events are dispatched after the response is sent to the client, ensuring that event listeners don't impact response time. This keeps your request cycle fast while still allowing audit logging and other background tasks.
+Mirror keeps the core impersonation state in one signed session payload and delegates guard resolution, guard validation, and storage to focused classes.
 
 ## Multi-Guard Support
 
-Mirror automatically detects which guard you're using:
+Mirror resolves the impersonator guard from the currently authenticated session guard:
 
 ```php
 Auth::guard('admin')->login($admin);
 
-Mirror::start($user); // uses 'admin' guard
+Mirror::impersonate($user); // uses 'admin' as the impersonator guard
 
 Mirror::stop(); // restores to 'admin' guard
 ```
 
-You don't need to specify the guard manually - it figures it out from the current auth context.
+For the impersonated user, Mirror uses the explicit `guard` argument or model/provider inference. If the same model is attached to multiple session guards, Mirror uses the first matching guard. Pass the target guard explicitly when you need a specific one:
+
+```php
+Mirror::impersonate($user, guard: 'web');
+```
 
 ## Blade Directives
 
