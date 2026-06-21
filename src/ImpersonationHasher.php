@@ -8,16 +8,12 @@ use JsonException;
 
 final readonly class ImpersonationHasher
 {
-    public function __construct(
-        private string $key,
-    ) {}
-
     /**
      * @throws JsonException
      */
     public function sign(ImpersonationPayload $payload): string
     {
-        return hash_hmac('sha256', $this->serialize($payload), $this->key);
+        return hash_hmac('sha256', $this->serialize($payload), (string) config('app.key'));
     }
 
     public function verify(ImpersonationPayload $payload, string $signature): bool

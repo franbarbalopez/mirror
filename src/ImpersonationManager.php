@@ -110,7 +110,7 @@ class ImpersonationManager implements Mirror
         Pipeline::send($force)
             ->through($this->pipes['leave'])
             ->then(function (): void {
-                $this->restore();
+                $this->revert();
             });
     }
 
@@ -202,7 +202,7 @@ class ImpersonationManager implements Mirror
         return (string) config('mirror.redirects.expired', '/');
     }
 
-    private function restore(): void
+    private function revert(): void
     {
         /** @var ImpersonationPayload $payload */
         $payload = $this->payload();

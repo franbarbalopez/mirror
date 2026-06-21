@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Mirror;
 
-use Illuminate\Config\Repository;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Mirror\Contracts\Mirror;
@@ -23,10 +21,6 @@ class MirrorServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(
             __DIR__.'/../config/mirror.php', 'mirror'
         );
-
-        $this->app->singleton(ImpersonationHasher::class, fn (Application $app): ImpersonationHasher => new ImpersonationHasher(
-            (string) $app->make(Repository::class)->get('app.key'),
-        ));
 
         $this->app->scoped(SessionImpersonationStore::class);
         $this->app->scoped(Mirror::class, ImpersonationManager::class);
@@ -58,9 +52,6 @@ class MirrorServiceProvider extends ServiceProvider
     {
         Route::aliasMiddleware('mirror.prevent', PreventImpersonation::class)
             ->aliasMiddleware('mirror.require', RequireImpersonation::class)
-            ->aliasMiddleware('mirror.ttl', CheckImpersonationTtl::class)
-            ->aliasMiddleware('mirror.impersonating', RequireImpersonation::class)
-            ->aliasMiddleware('mirror.not-impersonating', PreventImpersonation::class)
-            ->aliasMiddleware('mirror.expired', CheckImpersonationTtl::class);
+            ->aliasMiddleware('mirror.ttl', CheckImpersonationTtl::class);
     }
 }

@@ -16,18 +16,22 @@ final class ImpersonationStartContext
 
     public function __construct(
         private readonly Authenticatable $target,
-        private readonly ?string $requestedGuard = null,
+        ?string $targetGuard = null,
         private readonly ?string $leaveUrl = null,
-    ) {}
+    ) {
+        if ($targetGuard !== null) {
+            $this->targetGuard = $targetGuard;
+        }
+    }
 
     public function target(): Authenticatable
     {
         return $this->target;
     }
 
-    public function requestedGuard(): ?string
+    public function hasTargetGuard(): bool
     {
-        return $this->requestedGuard;
+        return isset($this->targetGuard);
     }
 
     public function leaveUrl(): ?string

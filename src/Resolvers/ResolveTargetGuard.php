@@ -12,15 +12,13 @@ final class ResolveTargetGuard
 {
     public function handle(ImpersonationStartContext $context, Closure $next): mixed
     {
-        if ($context->requestedGuard() === null) {
+        if (! $context->hasTargetGuard()) {
             $context->setTargetGuard(Guard::from($context->target()));
 
             return $next($context);
         }
 
-        Guard::ensureStateful($context->requestedGuard());
-
-        $context->setTargetGuard($context->requestedGuard());
+        Guard::ensureStateful($context->targetGuard());
 
         return $next($context);
     }
