@@ -35,7 +35,7 @@ final readonly class SessionImpersonationStore
         if ($signature === null) {
             $this->forget();
 
-            throw new TamperedImpersonationState('Impersonation session data has been tampered with. For security reasons, the session has been cleared.');
+            throw TamperedImpersonationState::missingSignature();
         }
 
         $payload = ImpersonationPayload::fromArray($storedPayload);
@@ -43,7 +43,7 @@ final readonly class SessionImpersonationStore
         if (! $this->hasher->verify($payload, $signature)) {
             $this->forget();
 
-            throw new TamperedImpersonationState('Impersonation session data has been tampered with. For security reasons, the session has been cleared.');
+            throw TamperedImpersonationState::invalidSignature();
         }
 
         return $payload;

@@ -123,7 +123,7 @@ Mirror resolves guards this way:
 ```php
 Mirror::leave();
 
-// Force stop - bypasses TTL check but still verifies integrity
+// Force leave - bypasses TTL check but still verifies integrity
 Mirror::forceLeave();
 ```
 
@@ -138,6 +138,34 @@ Mirror::impersonated(): ?Authenticatable
 Mirror::impersonatorId(): int|string|null
 Mirror::leaveUrl(): ?string
 ```
+
+## Exceptions
+
+All Mirror domain exceptions extend `Mirror\Exceptions\MirrorException`, so you can catch every package error from one base type or handle specific failures individually.
+
+```php
+use Mirror\Exceptions\MirrorException;
+use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Facades\Mirror;
+
+try {
+    Mirror::impersonate($user);
+} catch (UnsupportedGuard $exception) {
+    report($exception->getMessage());
+} catch (MirrorException $exception) {
+    report($exception->getMessage());
+}
+```
+
+| Exception | Meaning |
+| --- | --- |
+| `CanNotImpersonate` | The authenticated user does not implement the impersonation contract or `canImpersonate()` returned `false`. |
+| `CanNotBeImpersonated` | The target user does not implement the impersonation contract or `canBeImpersonated()` returned `false`. |
+| `ImpersonationAlreadyActive` | A session is already impersonating another user. |
+| `ImpersonationNotActive` | `leave()` or `forceLeave()` was called without an active impersonation. |
+| `ImpersonationExpired` | The session passed its configured TTL and must be left with `forceLeave()`. |
+| `TamperedImpersonationState` | The signed session payload is missing or invalid; Mirror clears the impersonation state for safety. |
+| `UnsupportedGuard` | Mirror could not infer a session guard, the selected guard is not stateful, or no authenticated session guard exists. |
 
 ## Middleware
 

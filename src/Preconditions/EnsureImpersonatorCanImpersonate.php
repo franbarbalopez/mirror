@@ -14,7 +14,7 @@ final class EnsureImpersonatorCanImpersonate
     public function handle(ImpersonationStartContext $context, Closure $next): mixed
     {
         if (! $context->impersonator() instanceof Impersonatable || ! $context->impersonator()->canImpersonate()) {
-            throw new CanNotImpersonate("You don't have permission to impersonate users.");
+            throw CanNotImpersonate::userIsNotAllowed($context->impersonator());
         }
 
         return $next($context);

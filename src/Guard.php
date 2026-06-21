@@ -18,7 +18,7 @@ final class Guard
         $matches = self::guardsFor($user);
 
         if ($matches->isEmpty()) {
-            throw new UnsupportedGuard(sprintf('Mirror could not infer a session guard for [%s]. Pass the guard explicitly.', $user::class));
+            throw UnsupportedGuard::cannotInferFor($user);
         }
 
         return $matches->first();
@@ -35,7 +35,7 @@ final class Guard
         $instance = auth()->guard($guard);
 
         if (! $instance instanceof StatefulGuard) {
-            throw new UnsupportedGuard(sprintf('The [%s] guard is not supported. Mirror only supports stateful session guards.', $guard));
+            throw UnsupportedGuard::notStateful($guard);
         }
     }
 

@@ -21,7 +21,7 @@ final readonly class EnsureImpersonationIsNotExpired
         if (! $force && $this->impersonation->expired()) {
             $this->store->forget();
 
-            throw new ImpersonationExpired('The impersonation session has expired.');
+            throw ImpersonationExpired::make();
         }
 
         return $next($force);

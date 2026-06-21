@@ -18,7 +18,7 @@ final readonly class EnsureImpersonationIsStarted
     public function handle(bool $force, Closure $next): mixed
     {
         if (! $this->impersonation->active()) {
-            throw new ImpersonationNotActive('You are not impersonating any user.');
+            throw ImpersonationNotActive::make();
         }
 
         return $next($force);

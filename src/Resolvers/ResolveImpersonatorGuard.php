@@ -17,7 +17,7 @@ final class ResolveImpersonatorGuard
         $guard = Guard::authenticated();
 
         if ($guard === null) {
-            throw new UnsupportedGuard('Impersonation is only allowed for guards that uses session driver.');
+            throw UnsupportedGuard::noAuthenticatedSessionGuard();
         }
 
         $context->setImpersonatorGuard($guard);

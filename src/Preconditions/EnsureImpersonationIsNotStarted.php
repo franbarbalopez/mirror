@@ -17,7 +17,7 @@ final readonly class EnsureImpersonationIsNotStarted
     public function handle(ImpersonationStartContext $context, Closure $next): mixed
     {
         if ($this->impersonation->active()) {
-            throw new ImpersonationAlreadyActive('You are already impersonating a user. Stop the current impersonation before starting a new one.');
+            throw ImpersonationAlreadyActive::make();
         }
 
         return $next($context);

@@ -14,7 +14,7 @@ final class EnsureTargetCanBeImpersonated
     public function handle(ImpersonationStartContext $context, Closure $next): mixed
     {
         if (! $context->target() instanceof Impersonatable || ! $context->target()->canBeImpersonated()) {
-            throw new CanNotBeImpersonated("This user can't be impersonated.");
+            throw CanNotBeImpersonated::targetIsNotAllowed($context->target());
         }
 
         return $next($context);

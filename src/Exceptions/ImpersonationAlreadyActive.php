@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Mirror\Exceptions;
 
-use RuntimeException;
-
-final class ImpersonationAlreadyActive extends RuntimeException {}
+final class ImpersonationAlreadyActive extends MirrorException
+{
+    public static function make(): self
+    {
+        return new self('An impersonation is already active. Leave the current impersonation before starting a new one.');
+    }
+}
