@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mirror;
 
 use Illuminate\Auth\AuthManager;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Pipeline;
@@ -69,7 +70,7 @@ class ImpersonationManager implements Mirror
 
         $this->store->put($payload);
 
-        auth($context->targetGuard())->login($context->target());
+        $this->auth->guard($context->targetGuard())->login($context->target());
 
         ImpersonationStarted::dispatch($context->impersonator(), $context->target(), $payload);
     }
@@ -156,7 +157,7 @@ class ImpersonationManager implements Mirror
             return null;
         }
 
-        return auth($payload->impersonatedGuard)->user();
+        return $this->auth->guard($payload->impersonatedGuard)->user();
     }
 
     /**
@@ -176,18 +177,23 @@ class ImpersonationManager implements Mirror
     {
         /** @var ImpersonationPayload $payload */
         $payload = $this->payload();
+        $impersonatedGuard = $this->auth->guard($payload->impersonatedGuard);
+        /** @var SessionGuard $impersonatorGuard */
+        $impersonatorGuard = $this->auth->guard($payload->impersonatorGuard);
+
         /** @var Authenticatable $impersonated */
-        $impersonated = auth($payload->impersonatedGuard)->user();
+        $impersonated = $impersonatedGuard->user();
+        $remember = Recaller::shouldRemember($impersonatorGuard, $payload->impersonatorId);
 
         $this->store->forget();
 
-        auth($payload->impersonatedGuard)->logout();
-        auth($payload->impersonatorGuard)->loginUsingId($payload->impersonatorId);
+        $impersonatedGuard->logout();
+        $impersonatorGuard->loginUsingId($payload->impersonatorId, $remember);
 
         $this->impersonator = null;
 
         /** @var Authenticatable $impersonator */
-        $impersonator = auth($payload->impersonatorGuard)->user();
+        $impersonator = $impersonatorGuard->user();
 
         ImpersonationStopped::dispatch($impersonator, $impersonated, $payload);
     }

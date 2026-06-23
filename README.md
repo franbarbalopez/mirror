@@ -102,7 +102,7 @@ By user instance:
 ```php
 Mirror::impersonate($user);
 
-// With an explicit impersonated guard and a leave URL
+// With an explicit target guard and a leave URL
 Mirror::impersonate(
     target: $targetUser,
     guard: 'web',
@@ -113,9 +113,9 @@ Mirror::impersonate(
 Mirror resolves guards this way:
 
 - The impersonator guard is the currently authenticated session guard.
-- The impersonated guard is the explicit `guard` argument when provided.
-- Without `guard`, Mirror uses the impersonated model's `guardName()` method, `guard_name` attribute, or `guard_name` default property when present.
-- Finally, Mirror infers the guard from the impersonated model's auth provider.
+- The target guard is the explicit `guard` argument when provided.
+- Without `guard`, Mirror uses the target model's `guardName()` method, `guard_name` attribute, or `guard_name` default property when present.
+- Finally, Mirror infers the guard from the target model's auth provider.
 - If multiple session guards match the same model, Mirror uses the first matching guard.
 
 ### Stopping Impersonation
@@ -309,7 +309,7 @@ Mirror::impersonate($user); // uses 'admin' as the impersonator guard
 Mirror::leave(); // restores to 'admin' guard
 ```
 
-For the impersonated user, Mirror uses the explicit `guard` argument or model/provider inference. If the same model is attached to multiple session guards, Mirror uses the first matching guard. Pass the target guard explicitly when you need a specific one:
+For the target user, Mirror uses the explicit `guard` argument or model/provider inference. If the same model is attached to multiple session guards, Mirror uses the first matching guard. Pass the target guard explicitly when you need a specific one:
 
 ```php
 Mirror::impersonate($user, guard: 'web');

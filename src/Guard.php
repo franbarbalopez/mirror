@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Mirror;
 
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Mirror\Exceptions\UnsupportedGuard;
@@ -30,12 +30,12 @@ final class Guard
             ->first(fn (string $guard): bool => Auth::guard($guard)->check());
     }
 
-    public static function ensureStateful(string $guard): void
+    public static function ensureSession(string $guard): void
     {
         $instance = auth()->guard($guard);
 
-        if (! $instance instanceof StatefulGuard) {
-            throw UnsupportedGuard::notStateful($guard);
+        if (! $instance instanceof SessionGuard) {
+            throw UnsupportedGuard::notSession($guard);
         }
     }
 
@@ -48,7 +48,7 @@ final class Guard
 
         if ($modelGuards->isNotEmpty()) {
             $modelGuards->each(function (string $guard): void {
-                self::ensureStateful($guard);
+                self::ensureSession($guard);
             });
 
             return $modelGuards;

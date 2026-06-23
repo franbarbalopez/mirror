@@ -80,11 +80,11 @@ final readonly class SessionImpersonationStore
 
     private function payloadKey(): string
     {
-        return config('mirror.session.key', 'mirror.impersonation').'.payload';
+        return config('mirror.session.key').'.payload';
     }
 
     private function signatureKey(): string
     {
-        return config('mirror.session.key', 'mirror.impersonation').'.signature';
+        return config('mirror.session.key').'.signature';
     }
 }

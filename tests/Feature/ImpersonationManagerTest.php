@@ -209,7 +209,7 @@ it('detects a missing signature', function (): void {
     Mirror::payload();
 })->throws(TamperedImpersonationState::class);
 
-it('rejects unsupported non-stateful guards', function (): void {
+it('rejects unsupported non-session guards', function (): void {
     Config::set('auth.guards.api', [
         'driver' => 'token',
         'provider' => 'users',
@@ -222,7 +222,7 @@ it('rejects unsupported non-stateful guards', function (): void {
     Mirror::impersonate(User::factory()->create(), guard: 'api');
 })->throws(UnsupportedGuard::class);
 
-it('infers the impersonated guard from the target model', function (): void {
+it('infers the target guard from the target model', function (): void {
     $target = User::factory()->create();
 
     expect(Guard::from($target))->toBe('web')
@@ -293,7 +293,7 @@ it('uses the first guard when the target model defines multiple guards', functio
     expect(Guard::from($target))->toBe('web');
 });
 
-it('rejects non-stateful guards defined by the target model', function (): void {
+it('rejects non-session guards defined by the target model', function (): void {
     Config::set('auth.guards.api', [
         'driver' => 'token',
         'provider' => 'users',
@@ -319,7 +319,7 @@ it('rejects impersonation when no session guard is authenticated', function (): 
     Mirror::impersonate(User::factory()->create());
 })->throws(UnsupportedGuard::class);
 
-it('throws when the impersonated guard cannot be inferred', function (): void {
+it('throws when the target guard cannot be inferred', function (): void {
     Config::set('auth.guards.api', [
         'driver' => 'token',
         'provider' => 'users',
@@ -333,7 +333,7 @@ it('throws when the impersonated guard cannot be inferred', function (): void {
     Guard::from(User::factory()->create());
 })->throws(UnsupportedGuard::class);
 
-it('respects an explicit impersonated guard', function (): void {
+it('respects an explicit target guard', function (): void {
     Config::set('auth.guards.admin', [
         'driver' => 'session',
         'provider' => 'users',
@@ -353,7 +353,7 @@ it('respects an explicit impersonated guard', function (): void {
         ->and($payload?->impersonatedGuard)->toBe('web');
 });
 
-it('uses the first inferred impersonated guard when multiple guards match', function (): void {
+it('uses the first inferred target guard when multiple guards match', function (): void {
     Config::set('auth.guards.customer', [
         'driver' => 'session',
         'provider' => 'users',

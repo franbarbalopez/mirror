@@ -22,7 +22,7 @@ it('groups all mirror domain exceptions under a single base exception', function
         TamperedImpersonationState::missingSignature(),
         TamperedImpersonationState::invalidSignature(),
         UnsupportedGuard::cannotInferFor($user),
-        UnsupportedGuard::notStateful('api'),
+        UnsupportedGuard::notSession('api'),
         UnsupportedGuard::noAuthenticatedSessionGuard(),
     ];
 
@@ -36,8 +36,8 @@ it('describes the exact reason for guard failures', function (): void {
     $user = User::factory()->make();
 
     expect(UnsupportedGuard::cannotInferFor($user)->getMessage())->toContain('could not infer')
-        ->and(UnsupportedGuard::notStateful('api')->getMessage())->toContain('[api]', 'not a stateful session guard')
-        ->and(UnsupportedGuard::noAuthenticatedSessionGuard()->getMessage())->toContain('could not find an authenticated stateful session guard');
+        ->and(UnsupportedGuard::notSession('api')->getMessage())->toContain('[api]', 'not a Laravel session guard')
+        ->and(UnsupportedGuard::noAuthenticatedSessionGuard()->getMessage())->toContain('could not find an authenticated Laravel session guard');
 });
 
 it('describes the exact reason for tampered session failures', function (): void {

@@ -18,7 +18,7 @@ final class ResolveTargetGuard
             return $next($context);
         }
 
-        Guard::ensureStateful($context->targetGuard());
+        Guard::ensureSession($context->targetGuard());
 
         return $next($context);
     }
