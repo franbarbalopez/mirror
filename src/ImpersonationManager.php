@@ -100,9 +100,7 @@ class ImpersonationManager implements Mirror
             return false;
         }
 
-        $payload = $this->payload();
-
-        return $payload instanceof ImpersonationPayload && $payload->expired($ttl);
+        return $this->store->expired($ttl);
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mirror;
 
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Carbon;
 use Mirror\Exceptions\TamperedImpersonationState;
 
 final readonly class SessionImpersonationStore
@@ -60,6 +61,21 @@ final readonly class SessionImpersonationStore
     public function active(): bool
     {
         return $this->session->has($this->payloadKey());
+    }
+
+    public function expired(?int $ttl): bool
+    {
+        if ($ttl === null) {
+            return false;
+        }
+
+        $payload = $this->get();
+
+        if (! $payload instanceof ImpersonationPayload) {
+            return false;
+        }
+
+        return ((int) Carbon::now()->timestamp - $payload->startedAt) > $ttl;
     }
 
     private function payloadKey(): string

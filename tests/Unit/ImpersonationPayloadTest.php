@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Carbon;
 use Mirror\ImpersonationPayload;
+use Mirror\SessionImpersonationStore;
 
-it('determines whether it has expired', function (): void {
+it('stores impersonation expiration state', function (): void {
     Carbon::setTestNow(Carbon::createFromTimestamp(100));
 
     $payload = new ImpersonationPayload(
@@ -16,7 +17,13 @@ it('determines whether it has expired', function (): void {
         startedAt: 90,
     );
 
-    expect($payload->expired(null))->toBeFalse()
-        ->and($payload->expired(10))->toBeFalse()
-        ->and($payload->expired(9))->toBeTrue();
+    $store = app(SessionImpersonationStore::class);
+
+    expect($store->expired(9))->toBeFalse();
+
+    $store->put($payload);
+
+    expect($store->expired(null))->toBeFalse()
+        ->and($store->expired(10))->toBeFalse()
+        ->and($store->expired(9))->toBeTrue();
 });

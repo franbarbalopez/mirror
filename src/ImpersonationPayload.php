@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mirror;
 
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Support\Carbon;
 
 /**
  * @implements Arrayable<string, int|string|null>
@@ -34,15 +33,6 @@ final readonly class ImpersonationPayload implements Arrayable
             'started_at' => $this->startedAt,
             'leave_url' => $this->leaveUrl,
         ];
-    }
-
-    public function expired(?int $ttl): bool
-    {
-        if ($ttl === null) {
-            return false;
-        }
-
-        return ((int) Carbon::now()->timestamp - $this->startedAt) > $ttl;
     }
 
     /**
