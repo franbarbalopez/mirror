@@ -16,6 +16,8 @@ use Mirror\ImpersonationPayload;
 interface Mirror
 {
     /**
+     * @param  array<string, mixed>  $context
+     *
      * @throws CanNotBeImpersonated
      * @throws CanNotImpersonate
      * @throws ImpersonationAlreadyActive
@@ -24,13 +26,14 @@ interface Mirror
     public function impersonate(
         Authenticatable $target,
         ?string $guard = null,
-        ?string $leaveUrl = null,
+        array $context = [],
     ): void;
 
     /**
      * @throws ImpersonationNotActive
+     * @throws TamperedImpersonationState
      */
-    public function leave(): void;
+    public function leave(): ImpersonationPayload;
 
     public function active(): bool;
 
@@ -57,9 +60,11 @@ interface Mirror
     public function impersonated(): ?Authenticatable;
 
     /**
+     * @return array<string, mixed>
+     *
      * @throws TamperedImpersonationState
      */
-    public function leaveUrl(): ?string;
+    public function context(): array;
 
     public function expiredRedirectUrl(): string;
 }

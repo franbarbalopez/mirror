@@ -38,11 +38,16 @@ it('stops expired impersonation and redirects', function (): void {
     $admin = User::factory()->create();
 
     actingAs($admin);
-    Mirror::impersonate(User::factory()->create(), leaveUrl: '/admin');
+    Config::set('mirror.redirects.expired', '/expired');
+
+    Mirror::impersonate(User::factory()->create(), context: [
+        'reason' => 'support',
+        'redirect' => '/admin',
+    ]);
 
     Carbon::setTestNow(Carbon::now()->addSeconds(61));
 
-    get('/ttl')->assertRedirect('/admin')->assertSessionHas('warning');
+    get('/ttl')->assertRedirect('/expired')->assertSessionHas('warning');
 
     expect(app(ImpersonationManager::class)->active())->toBeFalse()
         ->and(auth()->id())->toBe($admin->id);
@@ -50,7 +55,7 @@ it('stops expired impersonation and redirects', function (): void {
     Event::assertDispatched(ImpersonationExpired::class);
 });
 
-it('uses the configured expired redirect when no leave url exists', function (): void {
+it('uses the configured expired redirect', function (): void {
     Config::set('mirror.ttl', 60);
     Config::set('mirror.redirects.expired', '/expired');
 

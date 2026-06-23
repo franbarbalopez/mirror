@@ -23,7 +23,7 @@ final readonly class SessionImpersonationStore
 
     public function get(): ?ImpersonationPayload
     {
-        /** @var null|array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, leave_url?: ?string} $storedPayload */
+        /** @var null|array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context?: array<string, mixed>} $storedPayload */
         $storedPayload = $this->session->get($this->payloadKey());
 
         if ($storedPayload === null) {

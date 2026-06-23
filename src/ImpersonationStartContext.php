@@ -14,10 +14,13 @@ final class ImpersonationStartContext
 
     private Authenticatable $impersonator;
 
+    /**
+     * @param  array<string, mixed>  $context
+     */
     public function __construct(
         private readonly Authenticatable $target,
         ?string $targetGuard = null,
-        private readonly ?string $leaveUrl = null,
+        private readonly array $context = [],
     ) {
         if ($targetGuard !== null) {
             $this->targetGuard = $targetGuard;
@@ -34,9 +37,12 @@ final class ImpersonationStartContext
         return isset($this->targetGuard);
     }
 
-    public function leaveUrl(): ?string
+    /**
+     * @return array<string, mixed>
+     */
+    public function context(): array
     {
-        return $this->leaveUrl;
+        return $this->context;
     }
 
     public function targetGuard(): string

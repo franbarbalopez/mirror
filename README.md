@@ -17,7 +17,7 @@ Mirror is an elegant user impersonation package for Laravel. It allows administr
 - Configurable TTL expiration
 - Middleware for access control and TTL enforcement
 - Multi-guard support
-- Flexible URL redirection
+- Signed free-form impersonation context
 - Lifecycle events for audit logging
 
 ## Requirements
@@ -89,7 +89,7 @@ public function leave()
 
 ## Security
 
-Impersonation sessions are protected with HMAC-SHA256 hashes using your app key. The hash covers the impersonator ID, guard name, start time, and redirect URL. On every `leave()` call, Mirror verifies this hash - if someone's tampered with the session, it throws an exception and clears everything.
+Impersonation sessions are protected with HMAC-SHA256 hashes using your app key. The hash covers the impersonator ID, guard names, start time, target user ID, and custom context. On every `leave()` call, Mirror verifies this hash - if someone's tampered with the session, it throws an exception and clears everything.
 
 Configure TTL in `config/mirror.php` to automatically expire sessions after a set time.
 
@@ -102,11 +102,14 @@ By user instance:
 ```php
 Mirror::impersonate($user);
 
-// With an explicit target guard and a leave URL
+// With an explicit target guard and custom context
 Mirror::impersonate(
     target: $targetUser,
     guard: 'web',
-    leaveUrl: route('admin.users.index'),
+    context: [
+        'reason' => 'Support request',
+        'ticket_id' => 123,
+    ],
 );
 ```
 
@@ -121,10 +124,10 @@ Mirror resolves guards this way:
 ### Stopping Impersonation
 
 ```php
-Mirror::leave();
+$payload = Mirror::leave();
 ```
 
-`leave()` also works when the impersonation has expired. Mirror still verifies the signed session payload before restoring the original user.
+`leave()` also works when the impersonation has expired. Mirror still verifies the signed session payload before restoring the original user, then returns the closed `ImpersonationPayload` so you can inspect its context after the session state has been cleared.
 
 ### Checking State
 
@@ -133,7 +136,7 @@ Mirror::active(): bool
 Mirror::impersonator(): ?Authenticatable
 Mirror::impersonated(): ?Authenticatable
 Mirror::impersonatorId(): int|string|null
-Mirror::leaveUrl(): ?string
+Mirror::context(): array
 ```
 
 ## Exceptions
@@ -243,16 +246,20 @@ class User extends Authenticatable implements Impersonatable
 }
 ```
 
-## URL Redirection
+## Impersonation Context
 
-You can control where users go when starting and stopping impersonation:
+Mirror lets you attach a free-form array context to the signed impersonation payload. Use it for your own application data, such as support reasons, ticket IDs, workflow sources, or audit metadata.
 
 ```php
 public function impersonate(User $user)
 {
     Mirror::impersonate(
         target: $user,
-        leaveUrl: route('admin.users.index'),
+        context: [
+            'reason' => request('reason'),
+            'ticket_id' => request('ticket_id'),
+            'source' => 'admin-panel',
+        ],
     );
 
     return redirect()->route('dashboard');
@@ -260,24 +267,27 @@ public function impersonate(User $user)
 
 public function leave()
 {
-    $leaveUrl = Mirror::leaveUrl();
+    $payload = Mirror::leave();
 
-    Mirror::leave();
+    audit('Impersonation ended', $payload->context);
 
-    return redirect($leaveUrl ?? route('admin.users.index'));
+    return redirect()->route('admin.users.index');
 }
 ```
 
-If you don't specify `leaveUrl`, `leaveUrl()` returns `null`.
+The context is available while impersonation is active through `Mirror::context()` or `Mirror::payload()?->context`. It is also available in lifecycle events through `$event->payload->context`.
+
+Mirror does not reserve any context keys or use context for internal redirects. The `mirror.ttl` middleware redirects expired impersonations to `config('mirror.redirects.expired')`.
 
 ## Events
 
-Mirror dispatches two events you can listen to:
+Mirror dispatches three events you can listen to:
 
 - `Mirror\Events\ImpersonationStarted`
 - `Mirror\Events\ImpersonationStopped`
+- `Mirror\Events\ImpersonationExpired`
 
-Both events contain the impersonator, the target user, and the signed impersonation payload. Good for audit logs or triggering workflows.
+The start and stop events contain the impersonator, the target user, and the signed impersonation payload. The expired event contains the signed payload. Good for audit logs or triggering workflows.
 
 ```php
 use Mirror\Events\ImpersonationStarted;
@@ -289,6 +299,7 @@ Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event
         'impersonated_id' => $event->impersonated->id,
         'impersonator_guard' => $event->payload->impersonatorGuard,
         'impersonated_guard' => $event->payload->impersonatedGuard,
+        'context' => $event->payload->context,
     ]);
 });
 ```

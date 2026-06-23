@@ -31,12 +31,18 @@ it('starts impersonation with a signed payload and dispatches an event', functio
 
     actingAs($admin);
 
-    Mirror::impersonate($target, leaveUrl: '/admin/users');
+    Mirror::impersonate($target, context: [
+        'reason' => 'support',
+        'ticket_id' => 123,
+    ]);
 
     expect(Auth::id())->toBe($target->id)
         ->and(app(ImpersonationManager::class)->active())->toBeTrue()
         ->and(app(ImpersonationManager::class)->impersonatorId())->toBe($admin->id)
-        ->and(app(ImpersonationManager::class)->leaveUrl())->toBe('/admin/users')
+        ->and(app(ImpersonationManager::class)->context())->toBe([
+            'reason' => 'support',
+            'ticket_id' => 123,
+        ])
         ->and(Session::has('mirror.impersonation.payload'))->toBeTrue()
         ->and(Session::has('mirror.impersonation.signature'))->toBeTrue();
 
@@ -45,12 +51,20 @@ it('starts impersonation with a signed payload and dispatches an event', functio
     expect($payload)->toBeInstanceOf(ImpersonationPayload::class)
         ->and($payload->impersonatorGuard)->toBe('web')
         ->and($payload->impersonatedGuard)->toBe('web')
-        ->and($payload->impersonatedId)->toBe($target->id);
+        ->and($payload->impersonatedId)->toBe($target->id)
+        ->and($payload->context)->toBe([
+            'reason' => 'support',
+            'ticket_id' => 123,
+        ]);
 
     Event::assertDispatched(ImpersonationStarted::class, fn (ImpersonationStarted $event): bool => $event->impersonator->is($admin)
         && $event->impersonated->is($target)
         && $event->payload->impersonatorGuard === 'web'
-        && $event->payload->impersonatedGuard === 'web');
+        && $event->payload->impersonatedGuard === 'web'
+        && $event->payload->context === [
+            'reason' => 'support',
+            'ticket_id' => 123,
+        ]);
 });
 
 it('stops impersonation and restores the original user', function (): void {
@@ -63,9 +77,11 @@ it('stops impersonation and restores the original user', function (): void {
 
     Mirror::impersonate($target);
 
-    Mirror::leave();
+    $payload = Mirror::leave();
 
     expect(Auth::id())->toBe($admin->id)
+        ->and($payload->impersonatorId)->toBe($admin->id)
+        ->and($payload->impersonatedId)->toBe($target->id)
         ->and(app(ImpersonationManager::class)->active())->toBeFalse()
         ->and(Session::has('mirror.impersonation.payload'))->toBeFalse()
         ->and(Session::has('mirror.impersonation.signature'))->toBeFalse();
@@ -103,7 +119,7 @@ it('returns null values when no impersonation is active', function (): void {
         ->and(app(ImpersonationManager::class)->impersonator())->toBeNull()
         ->and(app(ImpersonationManager::class)->impersonated())->toBeNull()
         ->and(app(ImpersonationManager::class)->impersonatorId())->toBeNull()
-        ->and(app(ImpersonationManager::class)->leaveUrl())->toBeNull()
+        ->and(app(ImpersonationManager::class)->context())->toBe([])
         ->and(app(ImpersonationManager::class)->expired())->toBeFalse();
 });
 

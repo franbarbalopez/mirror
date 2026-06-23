@@ -15,6 +15,7 @@ it('stores impersonation expiration state', function (): void {
         impersonatedId: 2,
         impersonatedGuard: 'web',
         startedAt: 90,
+        context: ['reason' => 'support'],
     );
 
     $store = app(SessionImpersonationStore::class);
@@ -25,5 +26,6 @@ it('stores impersonation expiration state', function (): void {
 
     expect($store->expired(null))->toBeFalse()
         ->and($store->expired(10))->toBeFalse()
-        ->and($store->expired(9))->toBeTrue();
+        ->and($store->expired(9))->toBeTrue()
+        ->and($store->get()?->context)->toBe(['reason' => 'support']);
 });

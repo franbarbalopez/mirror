@@ -34,6 +34,8 @@ class ImpersonationManager implements Mirror
     ) {}
 
     /**
+     * @param  array<string, mixed>  $context
+     *
      * @throws CanNotBeImpersonated
      * @throws CanNotImpersonate
      * @throws ImpersonationAlreadyActive
@@ -42,9 +44,9 @@ class ImpersonationManager implements Mirror
     public function impersonate(
         Authenticatable $target,
         ?string $guard = null,
-        ?string $leaveUrl = null,
+        array $context = [],
     ): void {
-        Pipeline::send(new ImpersonationStartContext($target, $guard, $leaveUrl))
+        Pipeline::send(new ImpersonationStartContext($target, $guard, $context))
             ->through([
                 EnsureImpersonationIsNotStarted::class,
                 ResolveImpersonatorGuard::class,
@@ -65,7 +67,7 @@ class ImpersonationManager implements Mirror
             impersonatedId: $context->target()->getAuthIdentifier(),
             impersonatedGuard: $context->targetGuard(),
             startedAt: (int) Carbon::now()->timestamp,
-            leaveUrl: $context->leaveUrl(),
+            context: $context->context(),
         );
 
         $this->store->put($payload);
@@ -77,14 +79,15 @@ class ImpersonationManager implements Mirror
 
     /**
      * @throws ImpersonationNotActive
+     * @throws TamperedImpersonationState
      */
-    public function leave(): void
+    public function leave(): ImpersonationPayload
     {
         if (! $this->active()) {
             throw ImpersonationNotActive::make();
         }
 
-        $this->revert();
+        return $this->revert();
     }
 
     public function active(): bool
@@ -161,19 +164,27 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * @return array<string, mixed>
+     *
      * @throws TamperedImpersonationState
      */
-    public function leaveUrl(): ?string
+    public function context(): array
     {
-        return $this->payload()?->leaveUrl;
+        $payload = $this->payload();
+
+        if (! $payload instanceof ImpersonationPayload) {
+            return [];
+        }
+
+        return $payload->context;
     }
 
     public function expiredRedirectUrl(): string
     {
-        return (string) config('mirror.redirects.expired', '/');
+        return (string) config('mirror.redirects.expired');
     }
 
-    private function revert(): void
+    private function revert(): ImpersonationPayload
     {
         /** @var ImpersonationPayload $payload */
         $payload = $this->payload();
@@ -196,5 +207,7 @@ class ImpersonationManager implements Mirror
         $impersonator = $impersonatorGuard->user();
 
         ImpersonationStopped::dispatch($impersonator, $impersonated, $payload);
+
+        return $payload;
     }
 }

@@ -7,12 +7,12 @@ use Mirror\ImpersonationStartContext;
 
 it('exposes its initial values through getters', function (): void {
     $target = User::factory()->make();
-    $context = new ImpersonationStartContext($target, 'web', '/users');
+    $context = new ImpersonationStartContext($target, 'web', ['reason' => 'support']);
 
     expect($context->target())->toBe($target)
         ->and($context->hasTargetGuard())->toBeTrue()
         ->and($context->targetGuard())->toBe('web')
-        ->and($context->leaveUrl())->toBe('/users');
+        ->and($context->context())->toBe(['reason' => 'support']);
 });
 
 it('sets and exposes resolved impersonation values', function (): void {
