@@ -8,7 +8,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Mirror\Exceptions\CanNotBeImpersonated;
 use Mirror\Exceptions\CanNotImpersonate;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\Exceptions\ImpersonationExpired;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Exceptions\UnsupportedGuard;
@@ -29,15 +28,9 @@ interface Mirror
     ): void;
 
     /**
-     * @throws ImpersonationExpired
      * @throws ImpersonationNotActive
      */
     public function leave(): void;
-
-    /**
-     * @throws ImpersonationNotActive
-     */
-    public function forceLeave(): void;
 
     public function active(): bool;
 

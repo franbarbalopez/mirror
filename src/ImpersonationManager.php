@@ -14,13 +14,10 @@ use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\CanNotBeImpersonated;
 use Mirror\Exceptions\CanNotImpersonate;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\Exceptions\ImpersonationExpired;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Exceptions\UnsupportedGuard;
-use Mirror\Preconditions\EnsureImpersonationIsNotExpired;
 use Mirror\Preconditions\EnsureImpersonationIsNotStarted;
-use Mirror\Preconditions\EnsureImpersonationIsStarted;
 use Mirror\Preconditions\EnsureImpersonatorCanImpersonate;
 use Mirror\Preconditions\EnsureTargetCanBeImpersonated;
 use Mirror\Resolvers\ResolveImpersonatorGuard;
@@ -28,23 +25,6 @@ use Mirror\Resolvers\ResolveTargetGuard;
 
 class ImpersonationManager implements Mirror
 {
-    /**
-     * @var array{impersonate: list<class-string>, leave: list<class-string>}
-     */
-    protected array $pipes = [
-        'impersonate' => [
-            EnsureImpersonationIsNotStarted::class,
-            ResolveImpersonatorGuard::class,
-            EnsureImpersonatorCanImpersonate::class,
-            EnsureTargetCanBeImpersonated::class,
-            ResolveTargetGuard::class,
-        ],
-        'leave' => [
-            EnsureImpersonationIsStarted::class,
-            EnsureImpersonationIsNotExpired::class,
-        ],
-    ];
-
     private ?Authenticatable $impersonator = null;
 
     public function __construct(
@@ -64,7 +44,13 @@ class ImpersonationManager implements Mirror
         ?string $leaveUrl = null,
     ): void {
         Pipeline::send(new ImpersonationStartContext($target, $guard, $leaveUrl))
-            ->through($this->pipes['impersonate'])
+            ->through([
+                EnsureImpersonationIsNotStarted::class,
+                ResolveImpersonatorGuard::class,
+                EnsureImpersonatorCanImpersonate::class,
+                EnsureTargetCanBeImpersonated::class,
+                ResolveTargetGuard::class,
+            ])
             ->then(function (ImpersonationStartContext $context): void {
                 $this->start($context);
             });
@@ -89,29 +75,15 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws ImpersonationExpired
      * @throws ImpersonationNotActive
      */
     public function leave(): void
     {
-        $this->stop();
-    }
+        if (! $this->active()) {
+            throw ImpersonationNotActive::make();
+        }
 
-    /**
-     * @throws ImpersonationNotActive
-     */
-    public function forceLeave(): void
-    {
-        $this->stop(force: true);
-    }
-
-    private function stop(bool $force = false): void
-    {
-        Pipeline::send($force)
-            ->through($this->pipes['leave'])
-            ->then(function (): void {
-                $this->revert();
-            });
+        $this->revert();
     }
 
     public function active(): bool

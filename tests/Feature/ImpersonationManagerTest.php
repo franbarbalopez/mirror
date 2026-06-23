@@ -12,7 +12,6 @@ use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\CanNotBeImpersonated;
 use Mirror\Exceptions\CanNotImpersonate;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\Exceptions\ImpersonationExpired;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Exceptions\UnsupportedGuard;
@@ -100,8 +99,6 @@ it('caches the impersonator model in memory for the current request', function (
 });
 
 it('returns null values when no impersonation is active', function (): void {
-    Config::set('mirror.ttl', 60);
-
     expect(app(ImpersonationManager::class)->payload())->toBeNull()
         ->and(app(ImpersonationManager::class)->impersonator())->toBeNull()
         ->and(app(ImpersonationManager::class)->impersonated())->toBeNull()
@@ -172,11 +169,7 @@ it('throws when stopping without active impersonation', function (): void {
     Mirror::leave();
 })->throws(ImpersonationNotActive::class);
 
-it('throws when force leaving without active impersonation', function (): void {
-    Mirror::forceLeave();
-})->throws(ImpersonationNotActive::class);
-
-it('throws when stopping an expired impersonation', function (): void {
+it('leaves an expired impersonation', function (): void {
     Config::set('mirror.ttl', 60);
 
     $admin = User::factory()->create();
@@ -187,19 +180,6 @@ it('throws when stopping an expired impersonation', function (): void {
     Carbon::setTestNow(Carbon::now()->addSeconds(61));
 
     Mirror::leave();
-})->throws(ImpersonationExpired::class);
-
-it('allows force leaving an expired impersonation', function (): void {
-    Config::set('mirror.ttl', 60);
-
-    $admin = User::factory()->create();
-
-    actingAs($admin);
-    Mirror::impersonate(User::factory()->create());
-
-    Carbon::setTestNow(Carbon::now()->addSeconds(61));
-
-    Mirror::forceLeave();
 
     expect(auth()->id())->toBe($admin->id)
         ->and(app(ImpersonationManager::class)->active())->toBeFalse();

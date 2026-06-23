@@ -6,7 +6,6 @@ use App\Models\User;
 use Mirror\Exceptions\CanNotBeImpersonated;
 use Mirror\Exceptions\CanNotImpersonate;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\Exceptions\ImpersonationExpired;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\MirrorException;
 use Mirror\Exceptions\TamperedImpersonationState;
@@ -19,7 +18,6 @@ it('groups all mirror domain exceptions under a single base exception', function
         CanNotBeImpersonated::targetIsNotAllowed($user),
         CanNotImpersonate::userIsNotAllowed($user),
         ImpersonationAlreadyActive::make(),
-        ImpersonationExpired::make(),
         ImpersonationNotActive::make(),
         TamperedImpersonationState::missingSignature(),
         TamperedImpersonationState::invalidSignature(),

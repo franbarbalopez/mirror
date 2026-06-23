@@ -52,7 +52,7 @@ public function leave()
 </code-snippet>
 @endverbatim
 
-If the impersonation has expired due to TTL restrictions, `forceLeave()` can be used to terminate the session while still verifying integrity.
+If the impersonation has expired due to TTL restrictions, `leave()` still restores the original user while verifying session integrity.
 
 ---
 

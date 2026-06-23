@@ -122,12 +122,9 @@ Mirror resolves guards this way:
 
 ```php
 Mirror::leave();
-
-// Force leave - bypasses TTL check but still verifies integrity
-Mirror::forceLeave();
 ```
 
-Use `forceLeave()` when you need to end impersonation from admin actions or cleanup scripts - it skips the TTL check but still throws if the session's been tampered with.
+`leave()` also works when the impersonation has expired. Mirror still verifies the signed session payload before restoring the original user.
 
 ### Checking State
 
@@ -162,8 +159,7 @@ try {
 | `CanNotImpersonate` | The authenticated user does not implement the impersonation contract or `canImpersonate()` returned `false`. |
 | `CanNotBeImpersonated` | The target user does not implement the impersonation contract or `canBeImpersonated()` returned `false`. |
 | `ImpersonationAlreadyActive` | A session is already impersonating another user. |
-| `ImpersonationNotActive` | `leave()` or `forceLeave()` was called without an active impersonation. |
-| `ImpersonationExpired` | The session passed its configured TTL and must be left with `forceLeave()`. |
+| `ImpersonationNotActive` | `leave()` was called without an active impersonation. |
 | `TamperedImpersonationState` | The signed session payload is missing or invalid; Mirror clears the impersonation state for safety. |
 | `UnsupportedGuard` | Mirror could not infer a session guard, the selected guard is not stateful, or no authenticated session guard exists. |
 

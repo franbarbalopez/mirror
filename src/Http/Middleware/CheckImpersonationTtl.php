@@ -32,7 +32,7 @@ readonly class CheckImpersonationTtl
             $redirectUrl = $this->impersonation->leaveUrl()
                 ?? $this->impersonation->expiredRedirectUrl();
 
-            $this->impersonation->forceLeave();
+            $this->impersonation->leave();
 
             if ($payload instanceof ImpersonationPayload) {
                 ImpersonationExpired::dispatch($payload);
