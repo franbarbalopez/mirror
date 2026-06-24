@@ -90,11 +90,14 @@ class ImpersonationManager implements Mirror
 
         $this->impersonator = null;
 
-        event(new ImpersonationStopped($ended->impersonator, $ended->impersonated, $ended->context));
+        event(new ImpersonationStopped(...$ended));
 
-        return $ended->context;
+        return $ended['context'];
     }
 
+    /**
+     * @throws TamperedImpersonationState
+     */
     public function active(): bool
     {
         return $this->store->active();
@@ -122,9 +125,11 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * @return array{impersonator: Authenticatable, impersonated: Authenticatable, context: array<string, mixed>}
+     *
      * @throws TamperedImpersonationState
      */
-    private function revert(): EndedImpersonation
+    private function revert(): array
     {
         /** @var ImpersonationPayload $payload */
         $payload = $this->payload();
@@ -146,7 +151,11 @@ class ImpersonationManager implements Mirror
         /** @var Authenticatable $impersonator */
         $impersonator = $impersonatorGuard->user();
 
-        return new EndedImpersonation($impersonator, $impersonated, $payload->context);
+        return [
+            'impersonator' => $impersonator,
+            'impersonated' => $impersonated,
+            'context' => $payload->context,
+        ];
     }
 
     /**

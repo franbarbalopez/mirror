@@ -240,6 +240,17 @@ it('detects a missing signature', function (): void {
     Mirror::context();
 })->throws(TamperedImpersonationState::class);
 
+it('detects a missing signature when checking active state', function (): void {
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    Session::forget('mirror.impersonation.signature');
+
+    Mirror::active();
+})->throws(TamperedImpersonationState::class);
+
 it('detects tampered payloads when checking expiration', function (): void {
     Config::set('mirror.ttl', 60);
 

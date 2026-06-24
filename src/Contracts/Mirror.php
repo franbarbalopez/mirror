@@ -32,6 +32,9 @@ interface Mirror
      */
     public function leave(): array;
 
+    /**
+     * @throws TamperedImpersonationState
+     */
     public function active(): bool;
 
     /**

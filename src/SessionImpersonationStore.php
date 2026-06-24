@@ -59,7 +59,7 @@ final readonly class SessionImpersonationStore
 
     public function active(): bool
     {
-        return $this->session->has($this->payloadKey());
+        return $this->get() instanceof ImpersonationPayload;
     }
 
     private function payloadKey(): string

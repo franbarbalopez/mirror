@@ -7,12 +7,10 @@ namespace Mirror;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Blade;
 use Mirror\Contracts\Impersonatable;
-use Mirror\Contracts\Mirror;
 
 final readonly class BladeDirectivesRegistrar
 {
     public function __construct(
-        private Mirror $impersonation,
         private SessionImpersonationStore $store,
     ) {}
 
@@ -26,11 +24,13 @@ final readonly class BladeDirectivesRegistrar
 
     private function impersonating(?string $guard): bool
     {
-        if ($guard === null) {
-            return $this->impersonation->active();
+        $payload = $this->store->get();
+
+        if (! $payload instanceof ImpersonationPayload) {
+            return false;
         }
 
-        return $this->store->get()?->impersonatedGuard === $guard;
+        return $guard === null || $payload->impersonatedGuard === $guard;
     }
 
     private function canImpersonate(?string $guard): bool

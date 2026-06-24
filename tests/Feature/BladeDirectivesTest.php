@@ -2,6 +2,9 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Session;
+use Illuminate\View\ViewException;
+use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Facades\Mirror;
 
 use function Pest\Laravel\actingAs;
@@ -16,6 +19,13 @@ it('renders impersonating directives', function (): void {
 
     expect($rendered)->toContain('yes')
         ->not->toContain('no');
+});
+
+it('renders not impersonating directives when no impersonation is active', function (): void {
+    $rendered = Blade::render('@impersonating yes @endimpersonating @notImpersonating no @endnotImpersonating');
+
+    expect($rendered)->toContain('no')
+        ->not->toContain('yes');
 });
 
 it('renders capability directives', function (): void {
@@ -41,6 +51,25 @@ it('supports guard-specific impersonating directives', function (): void {
 
     expect($rendered)->toContain('web')
         ->not->toContain('admin');
+});
+
+it('detects a missing signature when rendering impersonating directives', function (): void {
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    Session::forget('mirror.impersonation.signature');
+
+    try {
+        Blade::render('@impersonating yes @endimpersonating');
+    } catch (ViewException $viewException) {
+        expect($viewException->getPrevious())->toBeInstanceOf(TamperedImpersonationState::class);
+
+        return;
+    }
+
+    $this->fail('Expected the Blade render to fail when the impersonation signature is missing.');
 });
 
 it('hides capability directives for guests', function (): void {
