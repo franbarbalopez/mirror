@@ -38,7 +38,7 @@ it('starts impersonation with a signed payload and dispatches an event', functio
 
     expect(Auth::id())->toBe($target->id)
         ->and(app(ImpersonationManager::class)->active())->toBeTrue()
-        ->and(app(ImpersonationManager::class)->impersonatorId())->toBe($admin->id)
+        ->and(app(ImpersonationManager::class)->impersonator()?->getAuthIdentifier())->toBe($admin->id)
         ->and(app(ImpersonationManager::class)->context())->toBe([
             'reason' => 'support',
             'ticket_id' => 123,
@@ -46,7 +46,7 @@ it('starts impersonation with a signed payload and dispatches an event', functio
         ->and(Session::has('mirror.impersonation.payload'))->toBeTrue()
         ->and(Session::has('mirror.impersonation.signature'))->toBeTrue();
 
-    $payload = app(ImpersonationManager::class)->payload();
+    $payload = app(SessionImpersonationStore::class)->get();
 
     expect($payload)->toBeInstanceOf(ImpersonationPayload::class)
         ->and($payload->impersonatorGuard)->toBe('web')
@@ -115,12 +115,10 @@ it('caches the impersonator model in memory for the current request', function (
 });
 
 it('returns null values when no impersonation is active', function (): void {
-    expect(app(ImpersonationManager::class)->payload())->toBeNull()
+    expect(app(ImpersonationManager::class)->active())->toBeFalse()
         ->and(app(ImpersonationManager::class)->impersonator())->toBeNull()
         ->and(app(ImpersonationManager::class)->impersonated())->toBeNull()
-        ->and(app(ImpersonationManager::class)->impersonatorId())->toBeNull()
-        ->and(app(ImpersonationManager::class)->context())->toBe([])
-        ->and(app(ImpersonationManager::class)->expired())->toBeFalse();
+        ->and(app(ImpersonationManager::class)->context())->toBe([]);
 });
 
 it('supports explicit guard configuration and custom session keys', function (): void {
@@ -134,8 +132,7 @@ it('supports explicit guard configuration and custom session keys', function ():
     Mirror::impersonate($target);
 
     expect(Session::has('custom.impersonation.payload'))->toBeTrue()
-        ->and(Session::has('custom.impersonation.signature'))->toBeTrue()
-        ->and(app(ImpersonationManager::class)->expiredRedirectUrl())->toBe('/expired');
+        ->and(Session::has('custom.impersonation.signature'))->toBeTrue();
 });
 
 it('rejects nested impersonation', function (): void {
@@ -211,7 +208,7 @@ it('detects tampered payloads', function (): void {
     $payload['impersonator_id'] = 999;
     Session::put('mirror.impersonation.payload', $payload);
 
-    Mirror::payload();
+    Mirror::context();
 })->throws(TamperedImpersonationState::class);
 
 it('detects a missing signature', function (): void {
@@ -222,7 +219,7 @@ it('detects a missing signature', function (): void {
 
     Session::forget('mirror.impersonation.signature');
 
-    Mirror::payload();
+    Mirror::context();
 })->throws(TamperedImpersonationState::class);
 
 it('rejects unsupported non-session guards', function (): void {
@@ -363,7 +360,7 @@ it('respects an explicit target guard', function (): void {
 
     Mirror::impersonate($target, guard: 'web');
 
-    $payload = Mirror::payload();
+    $payload = app(SessionImpersonationStore::class)->get();
 
     expect($payload?->impersonatorGuard)->toBe('admin')
         ->and($payload?->impersonatedGuard)->toBe('web');
@@ -379,7 +376,7 @@ it('uses the first inferred target guard when multiple guards match', function (
 
     Mirror::impersonate(User::factory()->create());
 
-    expect(Mirror::payload()?->impersonatedGuard)->toBe('web');
+    expect(app(SessionImpersonationStore::class)->get()?->impersonatedGuard)->toBe('web');
 });
 
 it('uses model inference without a config guard fallback', function (): void {
@@ -391,7 +388,7 @@ it('uses model inference without a config guard fallback', function (): void {
 
     Mirror::impersonate(User::factory()->create());
 
-    expect(Mirror::payload()?->impersonatedGuard)->toBe('web');
+    expect(app(SessionImpersonationStore::class)->get()?->impersonatedGuard)->toBe('web');
 });
 
 it('resolves the impersonator guard from the authenticated guard', function (): void {
@@ -405,7 +402,7 @@ it('resolves the impersonator guard from the authenticated guard', function (): 
 
     Mirror::impersonate(User::factory()->create(), guard: 'web');
 
-    expect(Mirror::payload()?->impersonatorGuard)->toBe('admin');
+    expect(app(SessionImpersonationStore::class)->get()?->impersonatorGuard)->toBe('admin');
 });
 
 it('returns null when retrieving a user from a guard without provider', function (): void {

@@ -4,21 +4,14 @@ declare(strict_types=1);
 
 namespace Mirror\Events;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Mirror\ImpersonationPayload;
 
-class ImpersonationStarted
+readonly class ImpersonationStarted
 {
-    use Dispatchable;
-    use InteractsWithSockets;
     use SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
     public function __construct(
         public Authenticatable $impersonator,
         public Authenticatable $impersonated,

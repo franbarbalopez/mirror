@@ -23,11 +23,7 @@ interface Mirror
      * @throws ImpersonationAlreadyActive
      * @throws UnsupportedGuard
      */
-    public function impersonate(
-        Authenticatable $target,
-        ?string $guard = null,
-        array $context = [],
-    ): void;
+    public function impersonate(Authenticatable $target, ?string $guard = null, array $context = []): void;
 
     /**
      * @throws ImpersonationNotActive
@@ -37,22 +33,10 @@ interface Mirror
 
     public function active(): bool;
 
-    public function expired(): bool;
-
-    /**
-     * @throws TamperedImpersonationState
-     */
-    public function payload(): ?ImpersonationPayload;
-
     /**
      * @throws TamperedImpersonationState
      */
     public function impersonator(): ?Authenticatable;
-
-    /**
-     * @throws TamperedImpersonationState
-     */
-    public function impersonatorId(): int|string|null;
 
     /**
      * @throws TamperedImpersonationState
@@ -65,6 +49,4 @@ interface Mirror
      * @throws TamperedImpersonationState
      */
     public function context(): array;
-
-    public function expiredRedirectUrl(): string;
 }

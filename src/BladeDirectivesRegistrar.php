@@ -13,6 +13,7 @@ final readonly class BladeDirectivesRegistrar
 {
     public function __construct(
         private Mirror $impersonation,
+        private SessionImpersonationStore $store,
     ) {}
 
     public function register(): void
@@ -29,7 +30,7 @@ final readonly class BladeDirectivesRegistrar
             return $this->impersonation->active();
         }
 
-        return $this->impersonation->payload()?->impersonatedGuard === $guard;
+        return $this->store->get()?->impersonatedGuard === $guard;
     }
 
     private function canImpersonate(?string $guard): bool

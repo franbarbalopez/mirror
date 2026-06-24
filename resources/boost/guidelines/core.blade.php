@@ -149,8 +149,6 @@ The facade exposes helper methods for determining whether impersonation is activ
 Mirror::active();
 
 Mirror::impersonator();
-
-Mirror::impersonatorId();
 </code-snippet>
 @endverbatim
 

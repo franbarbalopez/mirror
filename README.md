@@ -135,7 +135,6 @@ $payload = Mirror::leave();
 Mirror::active(): bool
 Mirror::impersonator(): ?Authenticatable
 Mirror::impersonated(): ?Authenticatable
-Mirror::impersonatorId(): int|string|null
 Mirror::context(): array
 ```
 
@@ -164,7 +163,7 @@ try {
 | `ImpersonationAlreadyActive` | A session is already impersonating another user. |
 | `ImpersonationNotActive` | `leave()` was called without an active impersonation. |
 | `TamperedImpersonationState` | The signed session payload is missing or invalid; Mirror clears the impersonation state for safety. |
-| `UnsupportedGuard` | Mirror could not infer a session guard, the selected guard is not stateful, or no authenticated session guard exists. |
+| `UnsupportedGuard` | Mirror could not infer a Laravel session guard, the selected guard is not a Laravel session guard, or no authenticated session guard exists. |
 
 ## Middleware
 
@@ -275,7 +274,7 @@ public function leave()
 }
 ```
 
-The context is available while impersonation is active through `Mirror::context()` or `Mirror::payload()?->context`. It is also available in lifecycle events through `$event->payload->context`.
+The context is available while impersonation is active through `Mirror::context()`. It is also available through the `ImpersonationPayload` returned by `Mirror::leave()` and in lifecycle events through `$event->payload->context`.
 
 Mirror does not reserve any context keys or use context for internal redirects. The `mirror.ttl` middleware redirects expired impersonations to `config('mirror.redirects.expired')`.
 

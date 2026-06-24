@@ -71,7 +71,7 @@ class ImpersonationManager implements Mirror
 
         $this->auth->guard($pending->targetGuard())->login($pending->target());
 
-        ImpersonationStarted::dispatch($pending->impersonator(), $pending->target(), $payload);
+        event(new ImpersonationStarted($pending->impersonator(), $pending->target(), $payload));
     }
 
     /**
@@ -114,27 +114,15 @@ class ImpersonationManager implements Mirror
         /** @var Authenticatable $impersonator */
         $impersonator = $impersonatorGuard->user();
 
-        ImpersonationStopped::dispatch($impersonator, $impersonated, $payload);
+        event(new ImpersonationStopped($impersonator, $impersonated, $payload));
 
         return $payload;
-    }
-
-    public function expired(): bool
-    {
-        /** @var ?int $ttl */
-        $ttl = config('mirror.ttl');
-
-        if ($ttl === null) {
-            return false;
-        }
-
-        return $this->store->expired($ttl);
     }
 
     /**
      * @throws TamperedImpersonationState
      */
-    public function payload(): ?ImpersonationPayload
+    private function payload(): ?ImpersonationPayload
     {
         return $this->store->get();
     }
@@ -168,14 +156,6 @@ class ImpersonationManager implements Mirror
     /**
      * @throws TamperedImpersonationState
      */
-    public function impersonatorId(): int|string|null
-    {
-        return $this->payload()?->impersonatorId;
-    }
-
-    /**
-     * @throws TamperedImpersonationState
-     */
     public function impersonated(): ?Authenticatable
     {
         $payload = $this->payload();
@@ -201,10 +181,5 @@ class ImpersonationManager implements Mirror
         }
 
         return $payload->context;
-    }
-
-    public function expiredRedirectUrl(): string
-    {
-        return (string) config('mirror.redirects.expired');
     }
 }
