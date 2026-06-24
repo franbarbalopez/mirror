@@ -114,11 +114,11 @@ Mirror::impersonate(
 
 Mirror resolves guards this way:
 
-- The impersonator guard is the currently authenticated session guard.
+- The impersonator guard is the currently authenticated guard using the `session` driver.
 - The target guard is the explicit `guard` argument when provided.
 - Without `guard`, Mirror uses the target model's `guardName()` method, `guard_name` attribute, or `guard_name` default property when present.
 - Finally, Mirror infers the guard from the target model's auth provider.
-- If multiple session guards match the same model, Mirror uses the first matching guard.
+- If multiple guards using the `session` driver match the same model, Mirror uses the first matching guard.
 
 ### Stopping Impersonation
 
@@ -179,7 +179,7 @@ try {
 | `ImpersonationAlreadyActive` | A session is already impersonating another user. |
 | `ImpersonationNotActive` | `leave()` was called without an active impersonation. |
 | `TamperedImpersonationState` | The signed session payload is missing or invalid; Mirror clears the impersonation state for safety. |
-| `UnsupportedGuard` | Mirror could not infer a Laravel session guard, the selected guard is not a Laravel session guard, or no authenticated session guard exists. |
+| `UnsupportedGuard` | Mirror could not infer a guard using Laravel's `session` driver, the selected guard does not use that driver, or no authenticated guard using that driver exists. |
 
 ## Authorization
 
@@ -280,7 +280,7 @@ Mirror keeps the core impersonation state in one signed session payload and dele
 
 ## Multi-Guard Support
 
-Mirror resolves the impersonator guard from the currently authenticated session guard:
+Mirror resolves the impersonator guard from the currently authenticated guard using the `session` driver:
 
 ```php
 Auth::guard('admin')->login($admin);
@@ -290,7 +290,7 @@ Mirror::impersonate($user); // uses 'admin' as the impersonator guard
 Mirror::leave(); // restores to 'admin' guard
 ```
 
-For the target user, Mirror uses the explicit `guard` argument or model/provider inference. If the same model is attached to multiple session guards, Mirror uses the first matching guard. Pass the target guard explicitly when you need a specific one:
+For the target user, Mirror uses the explicit `guard` argument or model/provider inference. If the same model is attached to multiple guards using the `session` driver, Mirror uses the first matching guard. Pass the target guard explicitly when you need a specific one:
 
 ```php
 Mirror::impersonate($user, guard: 'web');

@@ -23,7 +23,7 @@ it('groups all mirror domain exceptions under a single base exception', function
         TamperedImpersonationState::invalidSignature(),
         UnsupportedGuard::cannotInferFor($user),
         UnsupportedGuard::notSession('api'),
-        UnsupportedGuard::noAuthenticatedSessionGuard(),
+        UnsupportedGuard::noAuthenticatedSessionDriverGuard(),
     ];
 
     foreach ($exceptions as $exception) {
@@ -35,9 +35,9 @@ it('groups all mirror domain exceptions under a single base exception', function
 it('describes the exact reason for guard failures', function (): void {
     $user = User::factory()->make();
 
-    expect(UnsupportedGuard::cannotInferFor($user)->getMessage())->toContain('Could not infer a Laravel session guard')
-        ->and(UnsupportedGuard::notSession('api')->getMessage())->toContain('[api]', 'not a Laravel session guard', 'Supported guards')
-        ->and(UnsupportedGuard::noAuthenticatedSessionGuard()->getMessage())->toContain('Could not find an authenticated Laravel session guard');
+    expect(UnsupportedGuard::cannotInferFor($user)->getMessage())->toContain("Could not infer a guard using Laravel's [session] driver")
+        ->and(UnsupportedGuard::notSession('api')->getMessage())->toContain('[api]', "does not use Laravel's [session] driver", 'Supported guards')
+        ->and(UnsupportedGuard::noAuthenticatedSessionDriverGuard()->getMessage())->toContain("Could not find an authenticated guard using Laravel's [session] driver");
 });
 
 it('describes the exact reason for tampered session failures', function (): void {

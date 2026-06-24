@@ -255,7 +255,7 @@ it('detects tampered payloads when checking expiration', function (): void {
     Mirror::expired();
 })->throws(TamperedImpersonationState::class);
 
-it('rejects unsupported non-session guards', function (): void {
+it('rejects unsupported guards without the session driver', function (): void {
     Config::set('auth.guards.api', [
         'driver' => 'token',
         'provider' => 'users',
@@ -339,7 +339,7 @@ it('uses the first guard when the target model defines multiple guards', functio
     expect(Guard::from($target))->toBe('web');
 });
 
-it('rejects non-session guards defined by the target model', function (): void {
+it('rejects guards without the session driver defined by the target model', function (): void {
     Config::set('auth.guards.api', [
         'driver' => 'token',
         'provider' => 'users',
@@ -356,7 +356,7 @@ it('rejects non-session guards defined by the target model', function (): void {
     Guard::from($target);
 })->throws(UnsupportedGuard::class);
 
-it('rejects impersonation when no session guard is authenticated', function (): void {
+it('rejects impersonation when no guard using the session driver is authenticated', function (): void {
     Config::set('auth.guards.api', [
         'driver' => 'token',
         'provider' => 'users',

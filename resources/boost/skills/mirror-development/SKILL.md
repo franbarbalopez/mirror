@@ -91,7 +91,7 @@ class UserImpersonationController extends Controller
 }
 ```
 
-Mirror resolves the impersonator guard from the currently authenticated session guard. The impersonated guard can come from the explicit `guard` argument, the target model's `guardName()` method or `guard_name`, or auth provider inference:
+Mirror resolves the impersonator guard from the currently authenticated guard using the `session` driver. The impersonated guard can come from the explicit `guard` argument, the target model's `guardName()` method or `guard_name`, or auth provider inference:
 
 ```php
 Mirror::impersonate($user, guard: 'web');

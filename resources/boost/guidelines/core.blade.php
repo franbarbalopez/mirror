@@ -25,7 +25,7 @@ public function impersonate(User $user)
 </code-snippet>
 @endverbatim
 
-The impersonator guard is resolved from the currently authenticated session guard. The impersonated guard can be passed explicitly with `guard`, read from the target model's `guardName()` method or `guard_name`, or inferred from the target model's auth provider.
+The impersonator guard is resolved from the currently authenticated guard using the `session` driver. The impersonated guard can be passed explicitly with `guard`, read from the target model's `guardName()` method or `guard_name`, or inferred from the target model's auth provider.
 
 @verbatim
 <code-snippet name="Start with explicit guard" lang="php">

@@ -17,7 +17,7 @@ final class ResolveImpersonatorGuard
         $guard = Guard::authenticated();
 
         if ($guard === null) {
-            throw UnsupportedGuard::noAuthenticatedSessionGuard();
+            throw UnsupportedGuard::noAuthenticatedSessionDriverGuard();
         }
 
         $pending->setImpersonatorGuard($guard);
