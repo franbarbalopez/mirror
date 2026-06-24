@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Events;
+namespace Mirror;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Queue\SerializesModels;
 
-readonly class ImpersonationStarted
+final readonly class EndedImpersonation
 {
-    use SerializesModels;
-
     /**
      * @param  array<string, mixed>  $context
      */

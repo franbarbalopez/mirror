@@ -11,7 +11,6 @@ use Mirror\Exceptions\ImpersonationAlreadyActive;
 use Mirror\Exceptions\ImpersonationNotActive;
 use Mirror\Exceptions\TamperedImpersonationState;
 use Mirror\Exceptions\UnsupportedGuard;
-use Mirror\ImpersonationPayload;
 
 interface Mirror
 {
@@ -26,12 +25,19 @@ interface Mirror
     public function impersonate(Authenticatable $target, ?string $guard = null, array $context = []): void;
 
     /**
+     * @return array<string, mixed>
+     *
      * @throws ImpersonationNotActive
      * @throws TamperedImpersonationState
      */
-    public function leave(): ImpersonationPayload;
+    public function leave(): array;
 
     public function active(): bool;
+
+    /**
+     * @throws TamperedImpersonationState
+     */
+    public function expired(): bool;
 
     /**
      * @throws TamperedImpersonationState

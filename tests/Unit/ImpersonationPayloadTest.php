@@ -2,13 +2,10 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Carbon;
 use Mirror\ImpersonationPayload;
 use Mirror\SessionImpersonationStore;
 
-it('stores impersonation expiration state', function (): void {
-    Carbon::setTestNow(Carbon::createFromTimestamp(100));
-
+it('stores signed impersonation context', function (): void {
     $payload = new ImpersonationPayload(
         impersonatorId: 1,
         impersonatorGuard: 'web',
@@ -20,12 +17,7 @@ it('stores impersonation expiration state', function (): void {
 
     $store = app(SessionImpersonationStore::class);
 
-    expect($store->expired(9))->toBeFalse();
-
     $store->put($payload);
 
-    expect($store->expired(null))->toBeFalse()
-        ->and($store->expired(10))->toBeFalse()
-        ->and($store->expired(9))->toBeTrue()
-        ->and($store->get()?->context)->toBe(['reason' => 'support']);
+    expect($store->get()?->context)->toBe(['reason' => 'support']);
 });

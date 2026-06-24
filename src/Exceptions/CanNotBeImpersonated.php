@@ -12,7 +12,7 @@ final class CanNotBeImpersonated extends MirrorException
     public static function targetIsNotAllowed(Authenticatable $target): self
     {
         return new self(sprintf(
-            'The target user [%s] cannot be impersonated. Ensure the model implements [%s] and returns true from [canBeImpersonated()].',
+            'The target model [%s] cannot be impersonated. Ensure the model implements [%s] and returns true from [canBeImpersonated()].',
             $target::class,
             Impersonatable::class,
         ));

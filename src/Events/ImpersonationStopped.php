@@ -6,15 +6,17 @@ namespace Mirror\Events;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Queue\SerializesModels;
-use Mirror\ImpersonationPayload;
 
 readonly class ImpersonationStopped
 {
     use SerializesModels;
 
+    /**
+     * @param  array<string, mixed>  $context
+     */
     public function __construct(
         public Authenticatable $impersonator,
         public Authenticatable $impersonated,
-        public ImpersonationPayload $payload,
+        public array $context,
     ) {}
 }

@@ -71,20 +71,28 @@ class ImpersonationManager implements Mirror
 
         $this->auth->guard($pending->targetGuard())->login($pending->target());
 
-        event(new ImpersonationStarted($pending->impersonator(), $pending->target(), $payload));
+        event(new ImpersonationStarted($pending->impersonator(), $pending->target(), $payload->context));
     }
 
     /**
+     * @return array<string, mixed>
+     *
      * @throws ImpersonationNotActive
      * @throws TamperedImpersonationState
      */
-    public function leave(): ImpersonationPayload
+    public function leave(): array
     {
         if (! $this->active()) {
             throw ImpersonationNotActive::make();
         }
 
-        return $this->revert();
+        $ended = $this->revert();
+
+        $this->impersonator = null;
+
+        event(new ImpersonationStopped($ended->impersonator, $ended->impersonated, $ended->context));
+
+        return $ended->context;
     }
 
     public function active(): bool
@@ -92,7 +100,31 @@ class ImpersonationManager implements Mirror
         return $this->store->active();
     }
 
-    private function revert(): ImpersonationPayload
+    /**
+     * @throws TamperedImpersonationState
+     */
+    public function expired(): bool
+    {
+        $payload = $this->payload();
+
+        if (! $payload instanceof ImpersonationPayload) {
+            return false;
+        }
+
+        /** @var ?int $ttl */
+        $ttl = config('mirror.ttl');
+
+        if ($ttl === null) {
+            return false;
+        }
+
+        return ((int) Carbon::now()->timestamp - $payload->startedAt) > $ttl;
+    }
+
+    /**
+     * @throws TamperedImpersonationState
+     */
+    private function revert(): EndedImpersonation
     {
         /** @var ImpersonationPayload $payload */
         $payload = $this->payload();
@@ -114,9 +146,7 @@ class ImpersonationManager implements Mirror
         /** @var Authenticatable $impersonator */
         $impersonator = $impersonatorGuard->user();
 
-        event(new ImpersonationStopped($impersonator, $impersonated, $payload));
-
-        return $payload;
+        return new EndedImpersonation($impersonator, $impersonated, $payload->context);
     }
 
     /**
@@ -132,15 +162,18 @@ class ImpersonationManager implements Mirror
      */
     public function impersonator(): ?Authenticatable
     {
+        if (! $this->active()) {
+            $this->impersonator = null;
+
+            return null;
+        }
+
         if ($this->impersonator instanceof Authenticatable) {
             return $this->impersonator;
         }
 
+        /** @var ImpersonationPayload $payload */
         $payload = $this->payload();
-
-        if (! $payload instanceof ImpersonationPayload) {
-            return null;
-        }
 
         $provider = $this->auth->createUserProvider(config(sprintf('auth.guards.%s.provider', $payload->impersonatorGuard)));
 

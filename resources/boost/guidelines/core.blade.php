@@ -2,7 +2,7 @@
 
 Mirror is a Laravel package that provides secure user impersonation. It allows administrators to temporarily log in as another user to debug issues, provide support, or test user experiences.
 
-The package protects impersonation sessions using HMAC-SHA256 verification, configurable TTL expiration, middleware enforcement, and lifecycle events for audit logging. It also supports multi-guard authentication and includes Blade directives for UI awareness.
+The package protects impersonation sessions using HMAC-SHA256 verification, configurable TTL status checks, and lifecycle events for audit logging. It also supports multi-guard authentication and includes Blade directives for UI awareness.
 
 ---
 
@@ -52,7 +52,7 @@ public function leave()
 </code-snippet>
 @endverbatim
 
-If the impersonation has expired due to TTL restrictions, `leave()` still restores the original user while verifying session integrity.
+If the impersonation has expired according to `Mirror::expired()`, `leave()` still restores the original user while verifying session integrity.
 
 ---
 
@@ -90,56 +90,6 @@ Both the impersonator and impersonated models must implement `Impersonatable`.
 
 ---
 
-# Middleware
-
-Several middleware helpers are included to enforce impersonation rules.
-
-## mirror.ttl
-
-Ensures that impersonation sessions have not expired.
-
-@verbatim
-<code-snippet name="TTL middleware usage" lang="php">
-Route::middleware('mirror.ttl')->group(function () {
-    Route::get('/admin/users', [UserController::class, 'index']);
-});
-</code-snippet>
-@endverbatim
-
-If the configured TTL has passed, the session is automatically terminated.
-
----
-
-## mirror.require
-
-Allows access only while an impersonation session is active.
-
-@verbatim
-<code-snippet name="Require impersonation middleware" lang="php">
-Route::middleware('mirror.require')->group(function () {
-    Route::get('/impersonation/banner', fn () => view('impersonation.banner'));
-});
-</code-snippet>
-@endverbatim
-
----
-
-## mirror.prevent
-
-Blocks certain routes while impersonating another user.
-
-@verbatim
-<code-snippet name="Prevent actions while impersonating" lang="php">
-Route::middleware('mirror.prevent')->group(function () {
-    Route::post('/admin/users/{user}/delete', [UserController::class, 'destroy']);
-});
-</code-snippet>
-@endverbatim
-
-This is useful for protecting destructive or sensitive actions.
-
----
-
 # Checking Impersonation State
 
 The facade exposes helper methods for determining whether impersonation is active.
@@ -148,11 +98,15 @@ The facade exposes helper methods for determining whether impersonation is activ
 <code-snippet name="Check impersonation state" lang="php">
 Mirror::active();
 
+Mirror::expired();
+
 Mirror::impersonator();
 </code-snippet>
 @endverbatim
 
 These methods are commonly used inside controllers, middleware, or views.
+
+The default `mirror.ttl` is 30 minutes. Use `Mirror::expired()` in your application code to decide how to handle expired impersonations.
 
 ---
 
@@ -208,20 +162,17 @@ Event::listen(ImpersonationStarted::class, function ($event) {
     Log::info('User impersonation started', [
         'impersonator_id' => $event->impersonator->id,
         'impersonated_id' => $event->impersonated->id,
+        'context' => $event->context,
     ]);
 });
 </code-snippet>
 @endverbatim
 
-These events are dispatched after the HTTP response to avoid impacting request performance.
-
----
-
 # Best Practices
 
 - Define `canImpersonate()` and `canBeImpersonated()` on your user model.
-- Use the `mirror.ttl` middleware in administrative areas.
-- Protect destructive actions with `mirror.prevent`.
+- Use `Mirror::active()` inside your own middleware or controllers when routes need custom access rules.
+- Use `Mirror::expired()` when you need custom expiration responses.
 - Listen to impersonation events for audit logging.
 - Prefer the facade API instead of manually switching authentication contexts.
 
@@ -233,6 +184,6 @@ Impersonation sessions are protected through:
 
 - HMAC-SHA256 session integrity verification
 - Guard-aware authentication restoration
-- Optional TTL expiration
+- Configurable TTL status checks
 
 If session tampering is detected, the session is immediately terminated and cleared.

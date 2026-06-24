@@ -59,9 +59,7 @@ it('starts impersonation with a signed payload and dispatches an event', functio
 
     Event::assertDispatched(ImpersonationStarted::class, fn (ImpersonationStarted $event): bool => $event->impersonator->is($admin)
         && $event->impersonated->is($target)
-        && $event->payload->impersonatorGuard === 'web'
-        && $event->payload->impersonatedGuard === 'web'
-        && $event->payload->context === [
+        && $event->context === [
             'reason' => 'support',
             'ticket_id' => 123,
         ]);
@@ -75,19 +73,25 @@ it('stops impersonation and restores the original user', function (): void {
 
     actingAs($admin);
 
-    Mirror::impersonate($target);
+    Mirror::impersonate($target, context: [
+        'reason' => 'support',
+    ]);
 
-    $payload = Mirror::leave();
+    $context = Mirror::leave();
 
     expect(Auth::id())->toBe($admin->id)
-        ->and($payload->impersonatorId)->toBe($admin->id)
-        ->and($payload->impersonatedId)->toBe($target->id)
+        ->and($context)->toBe([
+            'reason' => 'support',
+        ])
         ->and(app(ImpersonationManager::class)->active())->toBeFalse()
         ->and(Session::has('mirror.impersonation.payload'))->toBeFalse()
         ->and(Session::has('mirror.impersonation.signature'))->toBeFalse();
 
     Event::assertDispatched(ImpersonationStopped::class, fn (ImpersonationStopped $event): bool => $event->impersonator->is($admin)
-        && $event->impersonated->is($target));
+        && $event->impersonated->is($target)
+        && $event->context === [
+            'reason' => 'support',
+        ]);
 });
 
 it('returns the impersonator and current impersonated user', function (): void {
@@ -116,14 +120,44 @@ it('caches the impersonator model in memory for the current request', function (
 
 it('returns null values when no impersonation is active', function (): void {
     expect(app(ImpersonationManager::class)->active())->toBeFalse()
+        ->and(app(ImpersonationManager::class)->expired())->toBeFalse()
         ->and(app(ImpersonationManager::class)->impersonator())->toBeNull()
         ->and(app(ImpersonationManager::class)->impersonated())->toBeNull()
         ->and(app(ImpersonationManager::class)->context())->toBe([]);
 });
 
+it('checks whether active impersonation has expired', function (): void {
+    Config::set('mirror.ttl', 60);
+    Carbon::setTestNow(Carbon::createFromTimestamp(100));
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    expect(Mirror::expired())->toBeFalse();
+
+    Carbon::setTestNow(Carbon::createFromTimestamp(161));
+
+    expect(Mirror::expired())->toBeTrue();
+});
+
+it('does not expire impersonation when ttl is disabled', function (): void {
+    Config::set('mirror.ttl');
+    Carbon::setTestNow(Carbon::createFromTimestamp(100));
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    Carbon::setTestNow(Carbon::createFromTimestamp(100000));
+
+    expect(Mirror::expired())->toBeFalse();
+});
+
 it('supports explicit guard configuration and custom session keys', function (): void {
     Config::set('mirror.session.key', 'custom.impersonation');
-    Config::set('mirror.redirects.expired', '/expired');
 
     $admin = User::factory()->create();
     $target = User::factory()->create();
@@ -182,22 +216,6 @@ it('throws when stopping without active impersonation', function (): void {
     Mirror::leave();
 })->throws(ImpersonationNotActive::class);
 
-it('leaves an expired impersonation', function (): void {
-    Config::set('mirror.ttl', 60);
-
-    $admin = User::factory()->create();
-
-    actingAs($admin);
-    Mirror::impersonate(User::factory()->create());
-
-    Carbon::setTestNow(Carbon::now()->addSeconds(61));
-
-    Mirror::leave();
-
-    expect(auth()->id())->toBe($admin->id)
-        ->and(app(ImpersonationManager::class)->active())->toBeFalse();
-});
-
 it('detects tampered payloads', function (): void {
     $admin = User::factory()->create();
 
@@ -220,6 +238,21 @@ it('detects a missing signature', function (): void {
     Session::forget('mirror.impersonation.signature');
 
     Mirror::context();
+})->throws(TamperedImpersonationState::class);
+
+it('detects tampered payloads when checking expiration', function (): void {
+    Config::set('mirror.ttl', 60);
+
+    $admin = User::factory()->create();
+
+    actingAs($admin);
+    Mirror::impersonate(User::factory()->create());
+
+    $payload = Session::get('mirror.impersonation.payload');
+    $payload['started_at'] = 1;
+    Session::put('mirror.impersonation.payload', $payload);
+
+    Mirror::expired();
 })->throws(TamperedImpersonationState::class);
 
 it('rejects unsupported non-session guards', function (): void {

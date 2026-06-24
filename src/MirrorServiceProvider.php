@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Mirror;
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Mirror\Contracts\Mirror;
-use Mirror\Http\Middleware\CheckImpersonationTtl;
-use Mirror\Http\Middleware\PreventImpersonation;
-use Mirror\Http\Middleware\RequireImpersonation;
 
 class MirrorServiceProvider extends ServiceProvider
 {
@@ -34,8 +30,6 @@ class MirrorServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->registerMiddlewares();
-
         $this->app->make(BladeDirectivesRegistrar::class)->register();
 
         if ($this->app->runningInConsole()) {
@@ -43,15 +37,5 @@ class MirrorServiceProvider extends ServiceProvider
                 __DIR__.'/../config/mirror.php' => config_path('mirror.php'),
             ], 'mirror');
         }
-    }
-
-    /**
-     * Register the Mirror middlewares.
-     */
-    protected function registerMiddlewares(): void
-    {
-        Route::aliasMiddleware('mirror.prevent', PreventImpersonation::class)
-            ->aliasMiddleware('mirror.require', RequireImpersonation::class)
-            ->aliasMiddleware('mirror.ttl', CheckImpersonationTtl::class);
     }
 }

@@ -8,25 +8,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | The maximum number of seconds an impersonation session may remain active.
-    | When this value is null, impersonation sessions do not expire by time.
+    | The default is 30 minutes. Set this value to null to disable expiration.
     |
     */
 
-    'ttl' => null,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Redirects
-    |--------------------------------------------------------------------------
-    |
-    | Configure the fallback URLs Mirror should use when it needs to redirect
-    | after handling impersonation state outside of your controllers.
-    |
-    */
-
-    'redirects' => [
-        'expired' => '/',
-    ],
+    'ttl' => 1800,
 
     /*
     |--------------------------------------------------------------------------

@@ -99,27 +99,7 @@ Mirror::impersonate($user, guard: 'web');
 
 ---
 
-## 5 Add Middleware
-
-Protect administrative routes with the TTL middleware.
-
-```php
-Route::middleware(['auth', 'mirror.ttl'])->group(function () {
-    Route::get('/admin/users', [UserController::class, 'index']);
-});
-```
-
-Prevent destructive actions while an impersonation session is active.
-
-```php
-Route::middleware('mirror.prevent')->group(function () {
-    Route::post('/admin/users/{user}/delete', [UserController::class, 'destroy']);
-});
-```
-
----
-
-## 6 Add Impersonation UI
+## 5 Add Impersonation UI
 
 A simple banner can help administrators understand when they are acting as another user.
 
@@ -141,8 +121,8 @@ A simple banner can help administrators understand when they are acting as anoth
 # Recommended Practices
 
 - Restrict impersonation through `canImpersonate()` and `canBeImpersonated()`.
-- Apply the `mirror.ttl` middleware to admin areas.
-- Use `mirror.prevent` to block sensitive operations during impersonation.
+- Use `Mirror::active()` inside your own middleware or controllers when routes need custom access rules.
+- Use `Mirror::expired()` when you want your application to decide the response for expired impersonations; the default `mirror.ttl` is 30 minutes.
 - Record impersonation activity through event listeners for auditing.
 
 ---

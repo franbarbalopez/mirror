@@ -35,9 +35,9 @@ it('groups all mirror domain exceptions under a single base exception', function
 it('describes the exact reason for guard failures', function (): void {
     $user = User::factory()->make();
 
-    expect(UnsupportedGuard::cannotInferFor($user)->getMessage())->toContain('could not infer')
-        ->and(UnsupportedGuard::notSession('api')->getMessage())->toContain('[api]', 'not a Laravel session guard')
-        ->and(UnsupportedGuard::noAuthenticatedSessionGuard()->getMessage())->toContain('could not find an authenticated Laravel session guard');
+    expect(UnsupportedGuard::cannotInferFor($user)->getMessage())->toContain('Could not infer a Laravel session guard')
+        ->and(UnsupportedGuard::notSession('api')->getMessage())->toContain('[api]', 'not a Laravel session guard', 'Supported guards')
+        ->and(UnsupportedGuard::noAuthenticatedSessionGuard()->getMessage())->toContain('Could not find an authenticated Laravel session guard');
 });
 
 it('describes the exact reason for tampered session failures', function (): void {
