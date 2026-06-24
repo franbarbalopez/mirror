@@ -26,11 +26,11 @@ final class Guard
 
     public static function authenticated(): ?string
     {
-        return self::sessionGuards()
+        return self::sessionDriverGuards()
             ->first(fn (string $guard): bool => Auth::guard($guard)->check());
     }
 
-    public static function ensureSession(string $guard): void
+    public static function ensureUsesSessionDriver(string $guard): void
     {
         $instance = auth()->guard($guard);
 
@@ -48,13 +48,13 @@ final class Guard
 
         if ($modelGuards->isNotEmpty()) {
             $modelGuards->each(function (string $guard): void {
-                self::ensureSession($guard);
+                self::ensureUsesSessionDriver($guard);
             });
 
             return $modelGuards;
         }
 
-        return self::sessionGuards()
+        return self::sessionDriverGuards()
             ->filter(function (string $guard) use ($user): bool {
                 $config = config(sprintf('auth.guards.%s', $guard), []);
                 $provider = $config['provider'] ?? null;
@@ -73,7 +73,7 @@ final class Guard
     /**
      * @return Collection<int, string>
      */
-    private static function sessionGuards(): Collection
+    private static function sessionDriverGuards(): Collection
     {
         /** @var array<string, mixed> $guards */
         $guards = config('auth.guards', []);

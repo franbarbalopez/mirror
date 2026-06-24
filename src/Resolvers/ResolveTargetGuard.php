@@ -18,7 +18,7 @@ final class ResolveTargetGuard
             return $next($pending);
         }
 
-        Guard::ensureSession($pending->targetGuard());
+        Guard::ensureUsesSessionDriver($pending->targetGuard());
 
         return $next($pending);
     }
