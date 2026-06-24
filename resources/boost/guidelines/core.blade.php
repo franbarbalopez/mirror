@@ -106,7 +106,7 @@ Mirror::impersonator();
 
 These methods are commonly used inside controllers, middleware, or views.
 
-The default `mirror.ttl` is 30 minutes. Use `Mirror::expired()` in your application code to decide how to handle expired impersonations.
+The default `mirror.ttl` is 30 minutes. Avoid values above 60 minutes. Use `Mirror::expired()` in your application code to decide how to handle expired impersonations.
 
 ---
 

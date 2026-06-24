@@ -8,7 +8,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | The maximum number of seconds an impersonation session may remain active.
-    | The default is 30 minutes. Set this value to null to disable expiration.
+    | The default is 30 minutes. Avoid values above 60 minutes. Set this
+    | value to null to disable expiration.
     |
     */
 

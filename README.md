@@ -90,7 +90,7 @@ public function leave()
 
 Impersonation sessions are protected with HMAC-SHA256 hashes using your app key. The hash covers the impersonator ID, guard names, start time, target user ID, and custom context. On every `leave()` call, Mirror verifies this hash - if someone's tampered with the session, it throws an exception and clears everything.
 
-Mirror reports whether an active impersonation has expired using `ttl` in `config/mirror.php`. The default TTL is 30 minutes. Mirror does not automatically close expired sessions or choose an HTTP response for your application.
+Mirror reports whether an active impersonation has expired using `ttl` in `config/mirror.php`. The default TTL is 30 minutes; avoid values above 60 minutes. Mirror does not automatically close expired sessions or choose an HTTP response for your application.
 
 ## API Reference
 
@@ -152,7 +152,7 @@ if (Mirror::active() && Mirror::expired()) {
 }
 ```
 
-The default `mirror.ttl` is `1800` seconds. Set it to `null` to make `Mirror::expired()` always return `false`.
+The default `mirror.ttl` is `1800` seconds. Avoid values above `3600` seconds. Set it to `null` to make `Mirror::expired()` always return `false`.
 
 ## Exceptions
 

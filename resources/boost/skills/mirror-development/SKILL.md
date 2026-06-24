@@ -122,7 +122,7 @@ A simple banner can help administrators understand when they are acting as anoth
 
 - Restrict impersonation through `canImpersonate()` and `canBeImpersonated()`.
 - Use `Mirror::active()` inside your own middleware or controllers when routes need custom access rules.
-- Use `Mirror::expired()` when you want your application to decide the response for expired impersonations; the default `mirror.ttl` is 30 minutes.
+- Use `Mirror::expired()` when you want your application to decide the response for expired impersonations; the default `mirror.ttl` is 30 minutes and should not exceed 60 minutes.
 - Record impersonation activity through event listeners for auditing.
 
 ---
