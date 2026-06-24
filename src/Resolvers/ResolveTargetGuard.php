@@ -6,20 +6,20 @@ namespace Mirror\Resolvers;
 
 use Closure;
 use Mirror\Guard;
-use Mirror\ImpersonationStartContext;
+use Mirror\PendingImpersonation;
 
 final class ResolveTargetGuard
 {
-    public function handle(ImpersonationStartContext $context, Closure $next): mixed
+    public function handle(PendingImpersonation $pending, Closure $next): mixed
     {
-        if (! $context->hasTargetGuard()) {
-            $context->setTargetGuard(Guard::from($context->target()));
+        if (! $pending->hasTargetGuard()) {
+            $pending->setTargetGuard(Guard::from($pending->target()));
 
-            return $next($context);
+            return $next($pending);
         }
 
-        Guard::ensureSession($context->targetGuard());
+        Guard::ensureSession($pending->targetGuard());
 
-        return $next($context);
+        return $next($pending);
     }
 }

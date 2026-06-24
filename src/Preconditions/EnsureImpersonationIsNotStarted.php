@@ -4,7 +4,7 @@ namespace Mirror\Preconditions;
 
 use Closure;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\ImpersonationStartContext;
+use Mirror\PendingImpersonation;
 use Mirror\SessionImpersonationStore;
 
 final readonly class EnsureImpersonationIsNotStarted
@@ -14,12 +14,12 @@ final readonly class EnsureImpersonationIsNotStarted
         //
     }
 
-    public function handle(ImpersonationStartContext $context, Closure $next): mixed
+    public function handle(PendingImpersonation $pending, Closure $next): mixed
     {
         if ($this->impersonation->active()) {
             throw ImpersonationAlreadyActive::make();
         }
 
-        return $next($context);
+        return $next($pending);
     }
 }

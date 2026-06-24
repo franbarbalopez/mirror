@@ -6,7 +6,7 @@ namespace Mirror;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final class ImpersonationStartContext
+final class PendingImpersonation
 {
     private string $targetGuard;
 

@@ -7,16 +7,16 @@ namespace Mirror\Preconditions;
 use Closure;
 use Mirror\Contracts\Impersonatable;
 use Mirror\Exceptions\CanNotImpersonate;
-use Mirror\ImpersonationStartContext;
+use Mirror\PendingImpersonation;
 
 final class EnsureImpersonatorCanImpersonate
 {
-    public function handle(ImpersonationStartContext $context, Closure $next): mixed
+    public function handle(PendingImpersonation $pending, Closure $next): mixed
     {
-        if (! $context->impersonator() instanceof Impersonatable || ! $context->impersonator()->canImpersonate()) {
-            throw CanNotImpersonate::userIsNotAllowed($context->impersonator());
+        if (! $pending->impersonator() instanceof Impersonatable || ! $pending->impersonator()->canImpersonate()) {
+            throw CanNotImpersonate::userIsNotAllowed($pending->impersonator());
         }
 
-        return $next($context);
+        return $next($pending);
     }
 }

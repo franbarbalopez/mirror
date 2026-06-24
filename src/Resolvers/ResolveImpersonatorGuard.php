@@ -8,11 +8,11 @@ use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Mirror\Exceptions\UnsupportedGuard;
 use Mirror\Guard;
-use Mirror\ImpersonationStartContext;
+use Mirror\PendingImpersonation;
 
 final class ResolveImpersonatorGuard
 {
-    public function handle(ImpersonationStartContext $context, Closure $next): mixed
+    public function handle(PendingImpersonation $pending, Closure $next): mixed
     {
         $guard = Guard::authenticated();
 
@@ -20,12 +20,12 @@ final class ResolveImpersonatorGuard
             throw UnsupportedGuard::noAuthenticatedSessionGuard();
         }
 
-        $context->setImpersonatorGuard($guard);
+        $pending->setImpersonatorGuard($guard);
 
         /** @var Authenticatable $impersonator */
         $impersonator = auth($guard)->user();
-        $context->setImpersonator($impersonator);
+        $pending->setImpersonator($impersonator);
 
-        return $next($context);
+        return $next($pending);
     }
 }

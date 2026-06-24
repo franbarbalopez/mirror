@@ -36,17 +36,14 @@ class ImpersonationManager implements Mirror
     /**
      * @param  array<string, mixed>  $context
      *
-     * @throws CanNotBeImpersonated
-     * @throws CanNotImpersonate
-     * @throws ImpersonationAlreadyActive
-     * @throws UnsupportedGuard
+     * @throws CanNotBeImpersonated|CanNotImpersonate|ImpersonationAlreadyActive|UnsupportedGuard
      */
     public function impersonate(
         Authenticatable $target,
         ?string $guard = null,
         array $context = [],
     ): void {
-        Pipeline::send(new ImpersonationStartContext($target, $guard, $context))
+        Pipeline::send(new PendingImpersonation($target, $guard, $context))
             ->through([
                 EnsureImpersonationIsNotStarted::class,
                 ResolveImpersonatorGuard::class,
@@ -54,27 +51,27 @@ class ImpersonationManager implements Mirror
                 EnsureTargetCanBeImpersonated::class,
                 ResolveTargetGuard::class,
             ])
-            ->then(function (ImpersonationStartContext $context): void {
-                $this->start($context);
+            ->then(function (PendingImpersonation $pending): void {
+                $this->start($pending);
             });
     }
 
-    private function start(ImpersonationStartContext $context): void
+    private function start(PendingImpersonation $pending): void
     {
         $payload = new ImpersonationPayload(
-            impersonatorId: $context->impersonator()->getAuthIdentifier(),
-            impersonatorGuard: $context->impersonatorGuard(),
-            impersonatedId: $context->target()->getAuthIdentifier(),
-            impersonatedGuard: $context->targetGuard(),
+            impersonatorId: $pending->impersonator()->getAuthIdentifier(),
+            impersonatorGuard: $pending->impersonatorGuard(),
+            impersonatedId: $pending->target()->getAuthIdentifier(),
+            impersonatedGuard: $pending->targetGuard(),
             startedAt: (int) Carbon::now()->timestamp,
-            context: $context->context(),
+            context: $pending->context(),
         );
 
         $this->store->put($payload);
 
-        $this->auth->guard($context->targetGuard())->login($context->target());
+        $this->auth->guard($pending->targetGuard())->login($pending->target());
 
-        ImpersonationStarted::dispatch($context->impersonator(), $context->target(), $payload);
+        ImpersonationStarted::dispatch($pending->impersonator(), $pending->target(), $payload);
     }
 
     /**
@@ -93,6 +90,33 @@ class ImpersonationManager implements Mirror
     public function active(): bool
     {
         return $this->store->active();
+    }
+
+    private function revert(): ImpersonationPayload
+    {
+        /** @var ImpersonationPayload $payload */
+        $payload = $this->payload();
+        $impersonatedGuard = $this->auth->guard($payload->impersonatedGuard);
+        /** @var SessionGuard $impersonatorGuard */
+        $impersonatorGuard = $this->auth->guard($payload->impersonatorGuard);
+
+        /** @var Authenticatable $impersonated */
+        $impersonated = $impersonatedGuard->user();
+        $remember = Recaller::shouldRemember($impersonatorGuard, $payload->impersonatorId);
+
+        $this->store->forget();
+
+        $impersonatedGuard->logout();
+        $impersonatorGuard->loginUsingId($payload->impersonatorId, $remember);
+
+        $this->impersonator = null;
+
+        /** @var Authenticatable $impersonator */
+        $impersonator = $impersonatorGuard->user();
+
+        ImpersonationStopped::dispatch($impersonator, $impersonated, $payload);
+
+        return $payload;
     }
 
     public function expired(): bool
@@ -182,32 +206,5 @@ class ImpersonationManager implements Mirror
     public function expiredRedirectUrl(): string
     {
         return (string) config('mirror.redirects.expired');
-    }
-
-    private function revert(): ImpersonationPayload
-    {
-        /** @var ImpersonationPayload $payload */
-        $payload = $this->payload();
-        $impersonatedGuard = $this->auth->guard($payload->impersonatedGuard);
-        /** @var SessionGuard $impersonatorGuard */
-        $impersonatorGuard = $this->auth->guard($payload->impersonatorGuard);
-
-        /** @var Authenticatable $impersonated */
-        $impersonated = $impersonatedGuard->user();
-        $remember = Recaller::shouldRemember($impersonatorGuard, $payload->impersonatorId);
-
-        $this->store->forget();
-
-        $impersonatedGuard->logout();
-        $impersonatorGuard->loginUsingId($payload->impersonatorId, $remember);
-
-        $this->impersonator = null;
-
-        /** @var Authenticatable $impersonator */
-        $impersonator = $impersonatorGuard->user();
-
-        ImpersonationStopped::dispatch($impersonator, $impersonated, $payload);
-
-        return $payload;
     }
 }
