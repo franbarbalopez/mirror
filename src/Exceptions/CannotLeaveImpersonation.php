@@ -6,7 +6,7 @@ namespace Mirror\Exceptions;
 
 use Throwable;
 
-/**
- * Thrown when an active impersonation cannot be safely stopped.
- */
-interface CannotLeaveImpersonation extends Throwable {}
+interface CannotLeaveImpersonation extends Throwable 
+{
+	//
+}

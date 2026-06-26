@@ -9,6 +9,9 @@ use Illuminate\Auth\SessionGuard;
 
 class Recaller
 {
+    /**
+     * Determine whether the original impersonator should be remembered after login.
+     */
     public static function shouldRemember(SessionGuard $guard, int|string $userId): bool
     {
         $recaller = static::resolve($guard);
@@ -18,6 +21,9 @@ class Recaller
             && $userId == $recaller->id();
     }
 
+    /**
+     * Resolve Laravel's remember-me recaller cookie for the given guard.
+     */
     protected static function resolve(SessionGuard $guard): ?BaseRecaller
     {
         $recaller = $guard->getRequest()->cookies->get($guard->getRecallerName());

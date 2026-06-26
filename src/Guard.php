@@ -16,7 +16,9 @@ use ReflectionClass;
 class Guard
 {
     /**
-     * @throws CannotStartImpersonation
+     * Infer the session-backed guard that owns the given user model.
+     *
+     * @throws CannotInferTargetGuard
      */
     public static function from(Authenticatable $user): string
     {
@@ -29,6 +31,9 @@ class Guard
         return $matches->first();
     }
 
+    /**
+     * Return the currently authenticated session-backed guard name, if any.
+     */
     public static function authenticated(): ?string
     {
         return static::sessionDriverGuards()
@@ -36,6 +41,8 @@ class Guard
     }
 
     /**
+     * Ensure the named guard is backed by Laravel's session guard implementation.
+     *
      * @throws GuardDoesNotUseSessionDriver
      */
     public static function ensureUsesSessionDriver(string $guard): void
@@ -48,6 +55,8 @@ class Guard
     }
 
     /**
+     * Return all session-backed guards that can authenticate the given user model.
+     *
      * @return Collection<int, string>
      */
     protected static function guardsFor(Authenticatable $user): Collection
@@ -79,6 +88,8 @@ class Guard
     }
 
     /**
+     * Return the configured guard names that use Laravel's session driver.
+     *
      * @return Collection<int, string>
      */
     protected static function sessionDriverGuards(): Collection
@@ -93,6 +104,8 @@ class Guard
     }
 
     /**
+     * Resolve guard names explicitly declared by the model, if any.
+     *
      * @return Collection<int, string>
      */
     protected static function modelGuards(Authenticatable $user): Collection
@@ -115,6 +128,8 @@ class Guard
     }
 
     /**
+     * Normalize a guard declaration into a list of string guard names.
+     *
      * @return Collection<int, string>
      */
     protected static function guardNames(mixed $guard): Collection
@@ -132,6 +147,9 @@ class Guard
             ->values();
     }
 
+    /**
+     * Return the configured model class for the given auth provider.
+     */
     protected static function providerModel(string $provider): ?string
     {
         /** @var ?string $model */

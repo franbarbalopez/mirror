@@ -38,11 +38,13 @@ class ImpersonationManager implements Mirror
     ];
 
     public function __construct(
-        protected readonly SessionImpersonationStore $store,
-        protected readonly AuthManager $auth,
+        protected SessionImpersonationStore $store,
+        protected AuthManager $auth,
     ) {}
 
     /**
+     * Start impersonating the given target user.
+     *
      * @param  array<string, mixed>  $context
      *
      * @throws CannotStartImpersonation
@@ -59,6 +61,9 @@ class ImpersonationManager implements Mirror
             });
     }
 
+    /**
+     * Persist the resolved impersonation payload and log in as the target user.
+     */
     protected function start(PendingImpersonation $pending): void
     {
         $payload = new ImpersonationPayload(
@@ -78,6 +83,8 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * Stop the active impersonation and return the signed context that started it.
+     *
      * @return array<string, mixed>
      *
      * @throws CannotLeaveImpersonation
@@ -98,6 +105,8 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * Determine whether the current session contains a valid impersonation payload.
+     *
      * @throws CannotReadImpersonationState
      */
     public function active(): bool
@@ -106,27 +115,8 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws CannotReadImpersonationState
-     */
-    public function expired(): bool
-    {
-        $payload = $this->payload();
-
-        if (! $payload instanceof ImpersonationPayload) {
-            return false;
-        }
-
-        /** @var ?int $ttl */
-        $ttl = config('mirror.ttl');
-
-        if ($ttl === null) {
-            return false;
-        }
-
-        return ((int) Carbon::now()->timestamp - $payload->startedAt) > $ttl;
-    }
-
-    /**
+     * Restore the original impersonator guard and clear the stored payload.
+     *
      * @return array{impersonator: Authenticatable, impersonated: Authenticatable, context: array<string, mixed>}
      *
      * @throws CannotLeaveImpersonation
@@ -161,6 +151,31 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * Determine whether the active impersonation is older than the configured TTL.
+     *
+     * @throws CannotReadImpersonationState
+     */
+    public function expired(): bool
+    {
+        $payload = $this->payload();
+
+        if (! $payload instanceof ImpersonationPayload) {
+            return false;
+        }
+
+        /** @var ?int $ttl */
+        $ttl = config('mirror.ttl');
+
+        if ($ttl === null) {
+            return false;
+        }
+
+        return ((int) Carbon::now()->timestamp - $payload->startedAt) > $ttl;
+    }
+
+    /**
+     * Read and verify the current impersonation payload from storage.
+     *
      * @throws CannotReadImpersonationState
      */
     protected function payload(): ?ImpersonationPayload
@@ -169,6 +184,8 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * Return the original impersonator model for the active impersonation.
+     *
      * @throws CannotReadImpersonationState
      */
     public function impersonator(): ?Authenticatable
@@ -198,6 +215,8 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * Return the currently impersonated model.
+     *
      * @throws CannotReadImpersonationState
      */
     public function impersonated(): ?Authenticatable
@@ -212,6 +231,8 @@ class ImpersonationManager implements Mirror
     }
 
     /**
+     * Return the custom context attached to the active impersonation.
+     *
      * @return array<string, mixed>
      *
      * @throws CannotReadImpersonationState

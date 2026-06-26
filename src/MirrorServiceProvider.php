@@ -9,9 +9,6 @@ use Mirror\Contracts\Mirror;
 
 class MirrorServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         $this->mergeConfigFrom(
@@ -24,9 +21,6 @@ class MirrorServiceProvider extends ServiceProvider
         $this->app->alias(Mirror::class, 'mirror');
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->app->make(BladeDirectivesRegistrar::class)->register();

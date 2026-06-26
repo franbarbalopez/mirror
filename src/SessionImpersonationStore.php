@@ -12,10 +12,13 @@ use Mirror\Exceptions\MissingImpersonationSignature;
 class SessionImpersonationStore
 {
     public function __construct(
-        protected readonly Session $session,
-        protected readonly ImpersonationHasher $hasher,
+        protected Session $session,
+        protected ImpersonationHasher $hasher,
     ) {}
 
+    /**
+     * Store the payload and its signature in the session.
+     */
     public function put(ImpersonationPayload $payload): void
     {
         $this->session->put($this->payloadKey(), $payload->toArray());
@@ -23,6 +26,8 @@ class SessionImpersonationStore
     }
 
     /**
+     * Retrieve and verify the payload stored in the session.
+     *
      * @throws CannotReadImpersonationState
      */
     public function get(): ?ImpersonationPayload
@@ -54,6 +59,9 @@ class SessionImpersonationStore
         return $payload;
     }
 
+    /**
+     * Remove all impersonation state from the session.
+     */
     public function forget(): void
     {
         $this->session->forget([
@@ -63,6 +71,8 @@ class SessionImpersonationStore
     }
 
     /**
+     * Determine whether the session contains a valid impersonation payload.
+     *
      * @throws CannotReadImpersonationState
      */
     public function active(): bool
@@ -70,11 +80,17 @@ class SessionImpersonationStore
         return $this->get() instanceof ImpersonationPayload;
     }
 
+    /**
+     * Return the configured session key used for the payload data.
+     */
     protected function payloadKey(): string
     {
         return config('mirror.session.key').'.payload';
     }
 
+    /**
+     * Return the configured session key used for the payload signature.
+     */
     protected function signatureKey(): string
     {
         return config('mirror.session.key').'.signature';

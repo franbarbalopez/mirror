@@ -9,6 +9,8 @@ use JsonException;
 class ImpersonationHasher
 {
     /**
+     * Create an HMAC signature for the given payload.
+     *
      * @throws JsonException
      */
     public function sign(ImpersonationPayload $payload): string
@@ -16,12 +18,17 @@ class ImpersonationHasher
         return hash_hmac('sha256', $this->serialize($payload), (string) config('app.key'));
     }
 
+    /**
+     * Determine whether a signature matches the given payload.
+     */
     public function verify(ImpersonationPayload $payload, string $signature): bool
     {
         return hash_equals($this->sign($payload), $signature);
     }
 
     /**
+     * Serialize the payload into the canonical string used for signing.
+     *
      * @throws JsonException
      */
     protected function serialize(ImpersonationPayload $payload): string

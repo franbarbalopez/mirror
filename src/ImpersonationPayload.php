@@ -26,6 +26,8 @@ class ImpersonationPayload implements Arrayable
     ) {}
 
     /**
+     * Convert the payload to the array shape stored and signed by Mirror.
+     *
      * @return array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context: array<string, mixed>}
      */
     public function toArray(): array
@@ -41,6 +43,8 @@ class ImpersonationPayload implements Arrayable
     }
 
     /**
+     * Hydrate a payload from the array shape read from the session.
+     *
      * @param  array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context?: array<string, mixed>}  $payload
      */
     public static function fromSessionPayload(array $payload): static

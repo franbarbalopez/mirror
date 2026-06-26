@@ -11,9 +11,12 @@ use Mirror\Contracts\Impersonatable;
 class BladeDirectivesRegistrar
 {
     public function __construct(
-        protected readonly SessionImpersonationStore $store,
+        protected SessionImpersonationStore $store,
     ) {}
 
+    /**
+     * Register Mirror's Blade condition directives.
+     */
     public function register(): void
     {
         Blade::if('impersonating', fn (?string $guard = null): bool => $this->impersonating($guard));

@@ -9,7 +9,7 @@ use Mirror\SessionImpersonationStore;
 
 class EnsureImpersonationIsNotStarted
 {
-    public function __construct(protected readonly SessionImpersonationStore $impersonation)
+    public function __construct(protected SessionImpersonationStore $impersonation)
     {
         //
     }

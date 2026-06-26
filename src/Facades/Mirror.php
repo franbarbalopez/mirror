@@ -20,6 +20,9 @@ use Mirror\ImpersonationManager;
  */
 class Mirror extends Facade
 {
+    /**
+     * Return the container binding key used by the facade.
+     */
     protected static function getFacadeAccessor(): string
     {
         return 'mirror';
