@@ -20,7 +20,6 @@ class MirrorServiceProvider extends ServiceProvider
 
         $this->app->scoped(SessionImpersonationStore::class);
         $this->app->scoped(Mirror::class, ImpersonationManager::class);
-        $this->app->scoped(ImpersonationManager::class);
 
         $this->app->alias(Mirror::class, 'mirror');
     }

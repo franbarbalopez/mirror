@@ -287,6 +287,13 @@ it('infers the target guard from the target model', function (): void {
         ->and(app(MirrorContract::class))->toBeInstanceOf(ImpersonationManager::class);
 });
 
+it('resolves the contract and facade alias to the same manager instance', function (): void {
+    $manager = app(MirrorContract::class);
+
+    expect($manager)->toBeInstanceOf(ImpersonationManager::class)
+        ->and(app('mirror'))->toBe($manager);
+});
+
 it('uses the target model guardName method before provider inference', function (): void {
     Config::set('auth.guards.customer', [
         'driver' => 'session',
