@@ -12,12 +12,10 @@ use Illuminate\Support\Facades\Pipeline;
 use Mirror\Contracts\Mirror;
 use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
-use Mirror\Exceptions\CanNotBeImpersonated;
-use Mirror\Exceptions\CanNotImpersonate;
-use Mirror\Exceptions\ImpersonationAlreadyActive;
+use Mirror\Exceptions\CannotLeaveImpersonation;
+use Mirror\Exceptions\CannotReadImpersonationState;
+use Mirror\Exceptions\CannotStartImpersonation;
 use Mirror\Exceptions\ImpersonationNotActive;
-use Mirror\Exceptions\TamperedImpersonationState;
-use Mirror\Exceptions\UnsupportedGuard;
 use Mirror\Preconditions\EnsureImpersonationIsNotStarted;
 use Mirror\Preconditions\EnsureImpersonatorCanImpersonate;
 use Mirror\Preconditions\EnsureTargetCanBeImpersonated;
@@ -36,7 +34,7 @@ class ImpersonationManager implements Mirror
     /**
      * @param  array<string, mixed>  $context
      *
-     * @throws CanNotBeImpersonated|CanNotImpersonate|ImpersonationAlreadyActive|UnsupportedGuard
+     * @throws CannotStartImpersonation
      */
     public function impersonate(
         Authenticatable $target,
@@ -77,8 +75,7 @@ class ImpersonationManager implements Mirror
     /**
      * @return array<string, mixed>
      *
-     * @throws ImpersonationNotActive
-     * @throws TamperedImpersonationState
+     * @throws CannotLeaveImpersonation
      */
     public function leave(): array
     {
@@ -96,7 +93,7 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function active(): bool
     {
@@ -104,7 +101,7 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function expired(): bool
     {
@@ -127,7 +124,7 @@ class ImpersonationManager implements Mirror
     /**
      * @return array{impersonator: Authenticatable, impersonated: Authenticatable, context: array<string, mixed>}
      *
-     * @throws TamperedImpersonationState
+     * @throws CannotLeaveImpersonation
      */
     private function revert(): array
     {
@@ -159,7 +156,7 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     private function payload(): ?ImpersonationPayload
     {
@@ -167,7 +164,7 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function impersonator(): ?Authenticatable
     {
@@ -196,7 +193,7 @@ class ImpersonationManager implements Mirror
     }
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function impersonated(): ?Authenticatable
     {
@@ -212,7 +209,7 @@ class ImpersonationManager implements Mirror
     /**
      * @return array<string, mixed>
      *
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function context(): array
     {

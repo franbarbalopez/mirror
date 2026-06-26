@@ -11,10 +11,13 @@ use Mirror\Events\ImpersonationStarted;
 use Mirror\Events\ImpersonationStopped;
 use Mirror\Exceptions\CanNotBeImpersonated;
 use Mirror\Exceptions\CanNotImpersonate;
+use Mirror\Exceptions\CannotInferTargetGuard;
+use Mirror\Exceptions\GuardDoesNotUseSessionDriver;
 use Mirror\Exceptions\ImpersonationAlreadyActive;
 use Mirror\Exceptions\ImpersonationNotActive;
-use Mirror\Exceptions\TamperedImpersonationState;
-use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Exceptions\InvalidImpersonationSignature;
+use Mirror\Exceptions\MissingAuthenticatedSessionGuard;
+use Mirror\Exceptions\MissingImpersonationSignature;
 use Mirror\Facades\Mirror;
 use Mirror\Guard;
 use Mirror\ImpersonationManager;
@@ -227,7 +230,7 @@ it('detects tampered payloads', function (): void {
     Session::put('mirror.impersonation.payload', $payload);
 
     Mirror::context();
-})->throws(TamperedImpersonationState::class);
+})->throws(InvalidImpersonationSignature::class);
 
 it('detects a missing signature', function (): void {
     $admin = User::factory()->create();
@@ -238,7 +241,7 @@ it('detects a missing signature', function (): void {
     Session::forget('mirror.impersonation.signature');
 
     Mirror::context();
-})->throws(TamperedImpersonationState::class);
+})->throws(MissingImpersonationSignature::class);
 
 it('detects a missing signature when checking active state', function (): void {
     $admin = User::factory()->create();
@@ -249,7 +252,7 @@ it('detects a missing signature when checking active state', function (): void {
     Session::forget('mirror.impersonation.signature');
 
     Mirror::active();
-})->throws(TamperedImpersonationState::class);
+})->throws(MissingImpersonationSignature::class);
 
 it('detects tampered payloads when checking expiration', function (): void {
     Config::set('mirror.ttl', 60);
@@ -264,7 +267,7 @@ it('detects tampered payloads when checking expiration', function (): void {
     Session::put('mirror.impersonation.payload', $payload);
 
     Mirror::expired();
-})->throws(TamperedImpersonationState::class);
+})->throws(InvalidImpersonationSignature::class);
 
 it('rejects unsupported guards without the session driver', function (): void {
     Config::set('auth.guards.api', [
@@ -277,7 +280,7 @@ it('rejects unsupported guards without the session driver', function (): void {
     actingAs($admin);
 
     Mirror::impersonate(User::factory()->create(), guard: 'api');
-})->throws(UnsupportedGuard::class);
+})->throws(GuardDoesNotUseSessionDriver::class);
 
 it('infers the target guard from the target model', function (): void {
     $target = User::factory()->create();
@@ -372,7 +375,7 @@ it('rejects guards without the session driver defined by the target model', func
     };
 
     Guard::from($target);
-})->throws(UnsupportedGuard::class);
+})->throws(GuardDoesNotUseSessionDriver::class);
 
 it('rejects impersonation when no guard using the session driver is authenticated', function (): void {
     Config::set('auth.guards.api', [
@@ -381,7 +384,7 @@ it('rejects impersonation when no guard using the session driver is authenticate
     ]);
 
     Mirror::impersonate(User::factory()->create());
-})->throws(UnsupportedGuard::class);
+})->throws(MissingAuthenticatedSessionGuard::class);
 
 it('throws when the target guard cannot be inferred', function (): void {
     Config::set('auth.guards.api', [
@@ -395,7 +398,7 @@ it('throws when the target guard cannot be inferred', function (): void {
     Config::set('auth.providers.users.model', stdClass::class);
 
     Guard::from(User::factory()->create());
-})->throws(UnsupportedGuard::class);
+})->throws(CannotInferTargetGuard::class);
 
 it('respects an explicit target guard', function (): void {
     Config::set('auth.guards.admin', [

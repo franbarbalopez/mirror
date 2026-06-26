@@ -5,57 +5,50 @@ declare(strict_types=1);
 namespace Mirror\Contracts;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Mirror\Exceptions\CanNotBeImpersonated;
-use Mirror\Exceptions\CanNotImpersonate;
-use Mirror\Exceptions\ImpersonationAlreadyActive;
-use Mirror\Exceptions\ImpersonationNotActive;
-use Mirror\Exceptions\TamperedImpersonationState;
-use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Exceptions\CannotLeaveImpersonation;
+use Mirror\Exceptions\CannotReadImpersonationState;
+use Mirror\Exceptions\CannotStartImpersonation;
 
 interface Mirror
 {
     /**
      * @param  array<string, mixed>  $context
      *
-     * @throws CanNotBeImpersonated
-     * @throws CanNotImpersonate
-     * @throws ImpersonationAlreadyActive
-     * @throws UnsupportedGuard
+     * @throws CannotStartImpersonation
      */
     public function impersonate(Authenticatable $target, ?string $guard = null, array $context = []): void;
 
     /**
      * @return array<string, mixed>
      *
-     * @throws ImpersonationNotActive
-     * @throws TamperedImpersonationState
+     * @throws CannotLeaveImpersonation
      */
     public function leave(): array;
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function active(): bool;
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function expired(): bool;
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function impersonator(): ?Authenticatable;
 
     /**
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function impersonated(): ?Authenticatable;
 
     /**
      * @return array<string, mixed>
      *
-     * @throws TamperedImpersonationState
+     * @throws CannotReadImpersonationState
      */
     public function context(): array;
 }

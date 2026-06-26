@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mirror\Exceptions;
 
-final class ImpersonationNotActive extends MirrorException
+final class ImpersonationNotActive extends MirrorException implements CannotLeaveImpersonation
 {
     public static function make(): self
     {

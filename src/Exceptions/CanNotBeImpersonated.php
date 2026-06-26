@@ -7,9 +7,9 @@ namespace Mirror\Exceptions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Mirror\Contracts\Impersonatable;
 
-final class CanNotBeImpersonated extends MirrorException
+final class CanNotBeImpersonated extends MirrorException implements CannotStartImpersonation
 {
-    public static function targetIsNotAllowed(Authenticatable $target): self
+    public static function make(Authenticatable $target): self
     {
         return new self(sprintf(
             'The target model [%s] cannot be impersonated. Ensure the model implements [%s] and returns true from [canBeImpersonated()].',

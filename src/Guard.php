@@ -8,17 +8,22 @@ use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Exceptions\CannotInferTargetGuard;
+use Mirror\Exceptions\CannotStartImpersonation;
+use Mirror\Exceptions\GuardDoesNotUseSessionDriver;
 use ReflectionClass;
 
 final class Guard
 {
+    /**
+     * @throws CannotStartImpersonation
+     */
     public static function from(Authenticatable $user): string
     {
         $matches = self::guardsFor($user);
 
         if ($matches->isEmpty()) {
-            throw UnsupportedGuard::cannotInferFor($user);
+            throw CannotInferTargetGuard::make($user);
         }
 
         return $matches->first();
@@ -30,12 +35,15 @@ final class Guard
             ->first(fn (string $guard): bool => Auth::guard($guard)->check());
     }
 
+    /**
+     * @throws GuardDoesNotUseSessionDriver
+     */
     public static function ensureUsesSessionDriver(string $guard): void
     {
         $instance = auth()->guard($guard);
 
         if (! $instance instanceof SessionGuard) {
-            throw UnsupportedGuard::notSession($guard);
+            throw GuardDoesNotUseSessionDriver::make($guard);
         }
     }
 

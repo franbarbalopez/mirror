@@ -14,7 +14,7 @@ final class EnsureImpersonatorCanImpersonate
     public function handle(PendingImpersonation $pending, Closure $next): mixed
     {
         if (! $pending->impersonator() instanceof Impersonatable || ! $pending->impersonator()->canImpersonate()) {
-            throw CanNotImpersonate::userIsNotAllowed($pending->impersonator());
+            throw CanNotImpersonate::make($pending->impersonator());
         }
 
         return $next($pending);

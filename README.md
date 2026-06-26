@@ -156,30 +156,46 @@ The default `mirror.ttl` is `1800` seconds. Avoid values above `3600` seconds. S
 
 ## Exceptions
 
-All Mirror domain exceptions extend `Mirror\Exceptions\MirrorException`, so you can catch every package error from one base type or handle specific failures individually.
+All Mirror domain exceptions extend `Mirror\Exceptions\MirrorException`, so you can catch every package error from one base type. Concrete exceptions also implement phase interfaces, which are the recommended public catch points for most applications.
 
 ```php
+use Mirror\Exceptions\CannotLeaveImpersonation;
+use Mirror\Exceptions\CannotStartImpersonation;
 use Mirror\Exceptions\MirrorException;
-use Mirror\Exceptions\UnsupportedGuard;
 use Mirror\Facades\Mirror;
 
 try {
     Mirror::impersonate($user);
-} catch (UnsupportedGuard $exception) {
+} catch (CannotStartImpersonation $exception) {
+    report($exception->getMessage());
+}
+
+try {
+    Mirror::leave();
+} catch (CannotLeaveImpersonation $exception) {
     report($exception->getMessage());
 } catch (MirrorException $exception) {
     report($exception->getMessage());
 }
 ```
 
-| Exception | Meaning |
-| --- | --- |
-| `CanNotImpersonate` | The authenticated user does not implement the impersonation contract or `canImpersonate()` returned `false`. |
-| `CanNotBeImpersonated` | The target user does not implement the impersonation contract or `canBeImpersonated()` returned `false`. |
-| `ImpersonationAlreadyActive` | A session is already impersonating another user. |
-| `ImpersonationNotActive` | `leave()` was called without an active impersonation. |
-| `TamperedImpersonationState` | The signed session payload is missing or invalid; Mirror clears the impersonation state for safety. |
-| `UnsupportedGuard` | Mirror could not infer a guard using Laravel's `session` driver, the selected guard does not use that driver, or no authenticated guard using that driver exists. |
+| Phase interface | Thrown by | Meaning |
+| --- | --- | --- |
+| `CannotStartImpersonation` | `impersonate()` | Mirror could not start impersonating because authorization, guard resolution, or current session state failed. |
+| `CannotLeaveImpersonation` | `leave()` | Mirror could not leave impersonation because no impersonation is active or stored state is invalid. |
+| `CannotReadImpersonationState` | `active()`, `expired()`, `impersonator()`, `impersonated()`, `context()` | Mirror could not safely read impersonation state because stored state is invalid. |
+
+| Exception | Phase interface | Meaning |
+| --- | --- | --- |
+| `CanNotImpersonate` | `CannotStartImpersonation` | The authenticated user does not implement the impersonation contract or `canImpersonate()` returned `false`. |
+| `CanNotBeImpersonated` | `CannotStartImpersonation` | The target user does not implement the impersonation contract or `canBeImpersonated()` returned `false`. |
+| `CannotInferTargetGuard` | `CannotStartImpersonation` | Mirror could not infer a target guard using Laravel's `session` driver. |
+| `GuardDoesNotUseSessionDriver` | `CannotStartImpersonation` | The selected guard does not use Laravel's `session` driver. |
+| `ImpersonationAlreadyActive` | `CannotStartImpersonation` | A session is already impersonating another user. |
+| `ImpersonationNotActive` | `CannotLeaveImpersonation` | `leave()` was called without an active impersonation. |
+| `InvalidImpersonationSignature` | `CannotLeaveImpersonation`, `CannotReadImpersonationState` | The signed session payload signature is invalid; Mirror clears the impersonation state for safety. |
+| `MissingAuthenticatedSessionGuard` | `CannotStartImpersonation` | No authenticated guard using Laravel's `session` driver exists for the impersonator. |
+| `MissingImpersonationSignature` | `CannotLeaveImpersonation`, `CannotReadImpersonationState` | The signed session payload signature is missing; Mirror clears the impersonation state for safety. |
 
 ## Authorization
 

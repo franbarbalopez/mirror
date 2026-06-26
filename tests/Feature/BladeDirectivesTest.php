@@ -4,7 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\ViewException;
-use Mirror\Exceptions\TamperedImpersonationState;
+use Mirror\Exceptions\MissingImpersonationSignature;
 use Mirror\Facades\Mirror;
 
 use function Pest\Laravel\actingAs;
@@ -64,7 +64,7 @@ it('detects a missing signature when rendering impersonating directives', functi
     try {
         Blade::render('@impersonating yes @endimpersonating');
     } catch (ViewException $viewException) {
-        expect($viewException->getPrevious())->toBeInstanceOf(TamperedImpersonationState::class);
+        expect($viewException->getPrevious())->toBeInstanceOf(MissingImpersonationSignature::class);
 
         return;
     }

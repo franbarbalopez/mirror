@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Mirror;
 
 use Illuminate\Contracts\Session\Session;
-use Mirror\Exceptions\TamperedImpersonationState;
+use Mirror\Exceptions\CannotReadImpersonationState;
+use Mirror\Exceptions\InvalidImpersonationSignature;
+use Mirror\Exceptions\MissingImpersonationSignature;
 
 final readonly class SessionImpersonationStore
 {
@@ -20,6 +22,9 @@ final readonly class SessionImpersonationStore
         $this->session->put($this->signatureKey(), $this->hasher->sign($payload));
     }
 
+    /**
+     * @throws CannotReadImpersonationState
+     */
     public function get(): ?ImpersonationPayload
     {
         /** @var null|array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context?: array<string, mixed>} $storedPayload */
@@ -35,7 +40,7 @@ final readonly class SessionImpersonationStore
         if ($signature === null) {
             $this->forget();
 
-            throw TamperedImpersonationState::missingSignature();
+            throw MissingImpersonationSignature::make();
         }
 
         $payload = ImpersonationPayload::fromArray($storedPayload);
@@ -43,7 +48,7 @@ final readonly class SessionImpersonationStore
         if (! $this->hasher->verify($payload, $signature)) {
             $this->forget();
 
-            throw TamperedImpersonationState::invalidSignature();
+            throw InvalidImpersonationSignature::make();
         }
 
         return $payload;
@@ -57,6 +62,9 @@ final readonly class SessionImpersonationStore
         ]);
     }
 
+    /**
+     * @throws CannotReadImpersonationState
+     */
     public function active(): bool
     {
         return $this->get() instanceof ImpersonationPayload;

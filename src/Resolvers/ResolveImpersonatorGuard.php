@@ -6,7 +6,7 @@ namespace Mirror\Resolvers;
 
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Mirror\Exceptions\UnsupportedGuard;
+use Mirror\Exceptions\MissingAuthenticatedSessionGuard;
 use Mirror\Guard;
 use Mirror\PendingImpersonation;
 
@@ -17,7 +17,7 @@ final class ResolveImpersonatorGuard
         $guard = Guard::authenticated();
 
         if ($guard === null) {
-            throw UnsupportedGuard::noAuthenticatedSessionDriverGuard();
+            throw MissingAuthenticatedSessionGuard::make();
         }
 
         $pending->setImpersonatorGuard($guard);
