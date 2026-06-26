@@ -43,7 +43,7 @@ class ImpersonationPayload implements Arrayable
     /**
      * @param  array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context?: array<string, mixed>}  $payload
      */
-    public static function fromArray(array $payload): static
+    public static function fromSessionPayload(array $payload): static
     {
         return new static(
             impersonatorId: $payload['impersonator_id'],

@@ -112,7 +112,7 @@ it('uses late static binding for named constructors', function (): void {
     $payload = new class(impersonatorId: 1, impersonatorGuard: 'web', impersonatedId: 2, impersonatedGuard: 'web', startedAt: 100) extends ImpersonationPayload {};
     $payloadClass = $payload::class;
 
-    expect($payloadClass::fromArray([
+    expect($payloadClass::fromSessionPayload([
         'impersonator_id' => 1,
         'impersonator_guard' => 'web',
         'impersonated_id' => 2,

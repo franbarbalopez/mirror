@@ -26,6 +26,17 @@ class ImpersonationManager implements Mirror
 {
     protected ?Authenticatable $impersonator = null;
 
+    /**
+     * @var list<class-string>
+     */
+    protected array $startPipeline = [
+        EnsureImpersonationIsNotStarted::class,
+        ResolveImpersonatorGuard::class,
+        EnsureImpersonatorCanImpersonate::class,
+        EnsureTargetCanBeImpersonated::class,
+        ResolveTargetGuard::class,
+    ];
+
     public function __construct(
         protected readonly SessionImpersonationStore $store,
         protected readonly AuthManager $auth,
@@ -42,24 +53,10 @@ class ImpersonationManager implements Mirror
         array $context = [],
     ): void {
         Pipeline::send(new PendingImpersonation($target, $guard, $context))
-            ->through($this->startPipeline())
+            ->through($this->startPipeline)
             ->then(function (PendingImpersonation $pending): void {
                 $this->start($pending);
             });
-    }
-
-    /**
-     * @return list<class-string>
-     */
-    protected function startPipeline(): array
-    {
-        return [
-            EnsureImpersonationIsNotStarted::class,
-            ResolveImpersonatorGuard::class,
-            EnsureImpersonatorCanImpersonate::class,
-            EnsureTargetCanBeImpersonated::class,
-            ResolveTargetGuard::class,
-        ];
     }
 
     protected function start(PendingImpersonation $pending): void

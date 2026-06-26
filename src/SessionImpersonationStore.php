@@ -43,7 +43,7 @@ class SessionImpersonationStore
             throw MissingImpersonationSignature::make();
         }
 
-        $payload = ImpersonationPayload::fromArray($storedPayload);
+        $payload = ImpersonationPayload::fromSessionPayload($storedPayload);
 
         if (! $this->hasher->verify($payload, $signature)) {
             $this->forget();
