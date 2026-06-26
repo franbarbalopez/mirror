@@ -9,11 +9,11 @@ use Mirror\Exceptions\CannotReadImpersonationState;
 use Mirror\Exceptions\InvalidImpersonationSignature;
 use Mirror\Exceptions\MissingImpersonationSignature;
 
-final readonly class SessionImpersonationStore
+class SessionImpersonationStore
 {
     public function __construct(
-        private Session $session,
-        private ImpersonationHasher $hasher,
+        protected readonly Session $session,
+        protected readonly ImpersonationHasher $hasher,
     ) {}
 
     public function put(ImpersonationPayload $payload): void
@@ -70,12 +70,12 @@ final readonly class SessionImpersonationStore
         return $this->get() instanceof ImpersonationPayload;
     }
 
-    private function payloadKey(): string
+    protected function payloadKey(): string
     {
         return config('mirror.session.key').'.payload';
     }
 
-    private function signatureKey(): string
+    protected function signatureKey(): string
     {
         return config('mirror.session.key').'.signature';
     }

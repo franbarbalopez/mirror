@@ -9,7 +9,7 @@ use Mirror\Contracts\Impersonatable;
 use Mirror\Exceptions\CanNotBeImpersonated;
 use Mirror\PendingImpersonation;
 
-final class EnsureTargetCanBeImpersonated
+class EnsureTargetCanBeImpersonated
 {
     public function handle(PendingImpersonation $pending, Closure $next): mixed
     {

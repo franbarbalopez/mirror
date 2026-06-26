@@ -7,18 +7,18 @@ namespace Mirror;
 use Illuminate\Auth\Recaller as BaseRecaller;
 use Illuminate\Auth\SessionGuard;
 
-final class Recaller
+class Recaller
 {
     public static function shouldRemember(SessionGuard $guard, int|string $userId): bool
     {
-        $recaller = self::resolve($guard);
+        $recaller = static::resolve($guard);
 
         return $recaller instanceof BaseRecaller
             && $recaller->valid()
             && $userId == $recaller->id();
     }
 
-    private static function resolve(SessionGuard $guard): ?BaseRecaller
+    protected static function resolve(SessionGuard $guard): ?BaseRecaller
     {
         $recaller = $guard->getRequest()->cookies->get($guard->getRecallerName());
 

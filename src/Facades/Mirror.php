@@ -18,7 +18,7 @@ use Mirror\ImpersonationManager;
  *
  * @see ImpersonationManager
  */
-final class Mirror extends Facade
+class Mirror extends Facade
 {
     protected static function getFacadeAccessor(): string
     {

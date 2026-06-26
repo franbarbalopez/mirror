@@ -294,6 +294,19 @@ Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event
 
 Mirror keeps the core impersonation state in one signed session payload and delegates guard resolution, guard validation, and storage to focused classes.
 
+## Extensibility
+
+Mirror keeps package classes open for extension. Internal hooks are `protected` so applications can subclass services, stores, guards, preconditions, resolvers, exceptions, and the manager when the default behavior needs to change.
+
+Bind your subclass in Laravel's container to replace the default implementation:
+
+```php
+use App\Support\CustomImpersonationManager;
+use Mirror\Contracts\Mirror;
+
+$this->app->scoped(Mirror::class, CustomImpersonationManager::class);
+```
+
 ## Multi-Guard Support
 
 Mirror resolves the impersonator guard from the currently authenticated guard using the `session` driver:

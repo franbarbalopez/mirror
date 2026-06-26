@@ -24,11 +24,11 @@ use Mirror\Resolvers\ResolveTargetGuard;
 
 class ImpersonationManager implements Mirror
 {
-    private ?Authenticatable $impersonator = null;
+    protected ?Authenticatable $impersonator = null;
 
     public function __construct(
-        private readonly SessionImpersonationStore $store,
-        private readonly AuthManager $auth,
+        protected readonly SessionImpersonationStore $store,
+        protected readonly AuthManager $auth,
     ) {}
 
     /**
@@ -42,19 +42,27 @@ class ImpersonationManager implements Mirror
         array $context = [],
     ): void {
         Pipeline::send(new PendingImpersonation($target, $guard, $context))
-            ->through([
-                EnsureImpersonationIsNotStarted::class,
-                ResolveImpersonatorGuard::class,
-                EnsureImpersonatorCanImpersonate::class,
-                EnsureTargetCanBeImpersonated::class,
-                ResolveTargetGuard::class,
-            ])
+            ->through($this->startPipeline())
             ->then(function (PendingImpersonation $pending): void {
                 $this->start($pending);
             });
     }
 
-    private function start(PendingImpersonation $pending): void
+    /**
+     * @return list<class-string>
+     */
+    protected function startPipeline(): array
+    {
+        return [
+            EnsureImpersonationIsNotStarted::class,
+            ResolveImpersonatorGuard::class,
+            EnsureImpersonatorCanImpersonate::class,
+            EnsureTargetCanBeImpersonated::class,
+            ResolveTargetGuard::class,
+        ];
+    }
+
+    protected function start(PendingImpersonation $pending): void
     {
         $payload = new ImpersonationPayload(
             impersonatorId: $pending->impersonator()->getAuthIdentifier(),
@@ -126,7 +134,7 @@ class ImpersonationManager implements Mirror
      *
      * @throws CannotLeaveImpersonation
      */
-    private function revert(): array
+    protected function revert(): array
     {
         /** @var ImpersonationPayload $payload */
         $payload = $this->payload();
@@ -158,7 +166,7 @@ class ImpersonationManager implements Mirror
     /**
      * @throws CannotReadImpersonationState
      */
-    private function payload(): ?ImpersonationPayload
+    protected function payload(): ?ImpersonationPayload
     {
         return $this->store->get();
     }

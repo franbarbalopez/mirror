@@ -6,21 +6,21 @@ namespace Mirror;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final class PendingImpersonation
+class PendingImpersonation
 {
-    private string $targetGuard;
+    protected string $targetGuard;
 
-    private string $impersonatorGuard;
+    protected string $impersonatorGuard;
 
-    private Authenticatable $impersonator;
+    protected Authenticatable $impersonator;
 
     /**
      * @param  array<string, mixed>  $context
      */
     public function __construct(
-        private readonly Authenticatable $target,
+        protected readonly Authenticatable $target,
         ?string $targetGuard = null,
-        private readonly array $context = [],
+        protected readonly array $context = [],
     ) {
         if ($targetGuard !== null) {
             $this->targetGuard = $targetGuard;

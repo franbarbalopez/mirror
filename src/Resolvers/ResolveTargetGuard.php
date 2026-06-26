@@ -8,7 +8,7 @@ use Closure;
 use Mirror\Guard;
 use Mirror\PendingImpersonation;
 
-final class ResolveTargetGuard
+class ResolveTargetGuard
 {
     public function handle(PendingImpersonation $pending, Closure $next): mixed
     {

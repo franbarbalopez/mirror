@@ -13,14 +13,14 @@ use Mirror\Exceptions\CannotStartImpersonation;
 use Mirror\Exceptions\GuardDoesNotUseSessionDriver;
 use ReflectionClass;
 
-final class Guard
+class Guard
 {
     /**
      * @throws CannotStartImpersonation
      */
     public static function from(Authenticatable $user): string
     {
-        $matches = self::guardsFor($user);
+        $matches = static::guardsFor($user);
 
         if ($matches->isEmpty()) {
             throw CannotInferTargetGuard::make($user);
@@ -31,7 +31,7 @@ final class Guard
 
     public static function authenticated(): ?string
     {
-        return self::sessionDriverGuards()
+        return static::sessionDriverGuards()
             ->first(fn (string $guard): bool => Auth::guard($guard)->check());
     }
 
@@ -50,19 +50,19 @@ final class Guard
     /**
      * @return Collection<int, string>
      */
-    private static function guardsFor(Authenticatable $user): Collection
+    protected static function guardsFor(Authenticatable $user): Collection
     {
-        $modelGuards = self::modelGuards($user);
+        $modelGuards = static::modelGuards($user);
 
         if ($modelGuards->isNotEmpty()) {
             $modelGuards->each(function (string $guard): void {
-                self::ensureUsesSessionDriver($guard);
+                static::ensureUsesSessionDriver($guard);
             });
 
             return $modelGuards;
         }
 
-        return self::sessionDriverGuards()
+        return static::sessionDriverGuards()
             ->filter(function (string $guard) use ($user): bool {
                 $config = config(sprintf('auth.guards.%s', $guard), []);
                 $provider = $config['provider'] ?? null;
@@ -71,7 +71,7 @@ final class Guard
                     return false;
                 }
 
-                $model = self::providerModel($provider);
+                $model = static::providerModel($provider);
 
                 return is_string($model) && $user instanceof $model;
             })
@@ -81,7 +81,7 @@ final class Guard
     /**
      * @return Collection<int, string>
      */
-    private static function sessionDriverGuards(): Collection
+    protected static function sessionDriverGuards(): Collection
     {
         /** @var array<string, mixed> $guards */
         $guards = config('auth.guards', []);
@@ -95,29 +95,29 @@ final class Guard
     /**
      * @return Collection<int, string>
      */
-    private static function modelGuards(Authenticatable $user): Collection
+    protected static function modelGuards(Authenticatable $user): Collection
     {
         if (method_exists($user, 'guardName')) {
-            return self::guardNames($user->guardName());
+            return static::guardNames($user->guardName());
         }
 
         if (method_exists($user, 'getAttributeValue')) {
             $guard = $user->getAttributeValue('guard_name');
 
             if ($guard !== null) {
-                return self::guardNames($guard);
+                return static::guardNames($guard);
             }
         }
 
         $guard = (new ReflectionClass($user))->getDefaultProperties()['guard_name'] ?? null;
 
-        return self::guardNames($guard);
+        return static::guardNames($guard);
     }
 
     /**
      * @return Collection<int, string>
      */
-    private static function guardNames(mixed $guard): Collection
+    protected static function guardNames(mixed $guard): Collection
     {
         if (is_string($guard)) {
             return collect([$guard]);
@@ -132,7 +132,7 @@ final class Guard
             ->values();
     }
 
-    private static function providerModel(string $provider): ?string
+    protected static function providerModel(string $provider): ?string
     {
         /** @var ?string $model */
         $model = config(sprintf('auth.providers.%s.model', $provider));

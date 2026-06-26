@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Mirror\Exceptions;
 
-final class ImpersonationNotActive extends MirrorException implements CannotLeaveImpersonation
+/** @phpstan-consistent-constructor */
+class ImpersonationNotActive extends MirrorException implements CannotLeaveImpersonation
 {
-    public static function make(): self
+    public static function make(): static
     {
-        return new self('There is no active impersonation to leave.');
+        return new static('There is no active impersonation to leave.');
     }
 }

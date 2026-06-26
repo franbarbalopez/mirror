@@ -7,9 +7,9 @@ use Mirror\Exceptions\ImpersonationAlreadyActive;
 use Mirror\PendingImpersonation;
 use Mirror\SessionImpersonationStore;
 
-final readonly class EnsureImpersonationIsNotStarted
+class EnsureImpersonationIsNotStarted
 {
-    public function __construct(private SessionImpersonationStore $impersonation)
+    public function __construct(protected readonly SessionImpersonationStore $impersonation)
     {
         //
     }

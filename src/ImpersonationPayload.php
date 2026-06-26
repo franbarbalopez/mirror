@@ -8,19 +8,21 @@ use Illuminate\Contracts\Support\Arrayable;
 
 /**
  * @implements Arrayable<string, mixed>
+ *
+ * @phpstan-consistent-constructor
  */
-final readonly class ImpersonationPayload implements Arrayable
+class ImpersonationPayload implements Arrayable
 {
     /**
      * @param  array<string, mixed>  $context
      */
     public function __construct(
-        public int|string $impersonatorId,
-        public string $impersonatorGuard,
-        public int|string $impersonatedId,
-        public string $impersonatedGuard,
-        public int $startedAt,
-        public array $context = [],
+        public readonly int|string $impersonatorId,
+        public readonly string $impersonatorGuard,
+        public readonly int|string $impersonatedId,
+        public readonly string $impersonatedGuard,
+        public readonly int $startedAt,
+        public readonly array $context = [],
     ) {}
 
     /**
@@ -41,9 +43,9 @@ final readonly class ImpersonationPayload implements Arrayable
     /**
      * @param  array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context?: array<string, mixed>}  $payload
      */
-    public static function fromArray(array $payload): self
+    public static function fromArray(array $payload): static
     {
-        return new self(
+        return new static(
             impersonatorId: $payload['impersonator_id'],
             impersonatorGuard: $payload['impersonator_guard'],
             impersonatedId: $payload['impersonated_id'],

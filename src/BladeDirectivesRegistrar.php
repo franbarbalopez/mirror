@@ -8,10 +8,10 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Blade;
 use Mirror\Contracts\Impersonatable;
 
-final readonly class BladeDirectivesRegistrar
+class BladeDirectivesRegistrar
 {
     public function __construct(
-        private SessionImpersonationStore $store,
+        protected readonly SessionImpersonationStore $store,
     ) {}
 
     public function register(): void
@@ -22,7 +22,7 @@ final readonly class BladeDirectivesRegistrar
         Blade::if('canBeImpersonated', fn (?Authenticatable $user = null, ?string $guard = null): bool => $this->canBeImpersonated($user, $guard));
     }
 
-    private function impersonating(?string $guard): bool
+    protected function impersonating(?string $guard): bool
     {
         $payload = $this->store->get();
 
@@ -33,14 +33,14 @@ final readonly class BladeDirectivesRegistrar
         return $guard === null || $payload->impersonatedGuard === $guard;
     }
 
-    private function canImpersonate(?string $guard): bool
+    protected function canImpersonate(?string $guard): bool
     {
         $user = auth($guard)->user();
 
         return $user instanceof Impersonatable && $user->canImpersonate();
     }
 
-    private function canBeImpersonated(?Authenticatable $user, ?string $guard): bool
+    protected function canBeImpersonated(?Authenticatable $user, ?string $guard): bool
     {
         $user ??= auth($guard)->user();
 

@@ -10,7 +10,7 @@ use Mirror\Exceptions\MissingAuthenticatedSessionGuard;
 use Mirror\Guard;
 use Mirror\PendingImpersonation;
 
-final class ResolveImpersonatorGuard
+class ResolveImpersonatorGuard
 {
     public function handle(PendingImpersonation $pending, Closure $next): mixed
     {

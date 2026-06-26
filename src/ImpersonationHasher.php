@@ -6,7 +6,7 @@ namespace Mirror;
 
 use JsonException;
 
-final readonly class ImpersonationHasher
+class ImpersonationHasher
 {
     /**
      * @throws JsonException
@@ -24,7 +24,7 @@ final readonly class ImpersonationHasher
     /**
      * @throws JsonException
      */
-    private function serialize(ImpersonationPayload $payload): string
+    protected function serialize(ImpersonationPayload $payload): string
     {
         return json_encode($payload->toArray(), JSON_THROW_ON_ERROR);
     }
