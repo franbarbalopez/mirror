@@ -10,7 +10,8 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/franbarbalopez/mirror.svg?style=flat-square)](https://packagist.org/packages/franbarbalopez/mirror)
 [![Tests](https://img.shields.io/github/actions/workflow/status/franbarbalopez/mirror/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/franbarbalopez/mirror/actions/workflows/tests.yml)
 [![PHP](https://img.shields.io/packagist/dependency-v/franbarbalopez/mirror/php?style=flat-square)](composer.json)
-[![Laravel](https://img.shields.io/badge/Laravel-11%20%7C%2012%20%7C%2013-ff2d20?style=flat-square&logo=laravel&logoColor=white)](composer.json)
+[![Laravel Compatibility](https://badge.laravel.cloud/badge/franbarbalopez/mirror)](https://packagist.org/packages/franbarbalopez/mirror)
+[![Laravel Boost](https://badge.laravel.cloud/boost-badge.svg)](https://github.com/laravel/boost)
 [![Downloads](https://img.shields.io/packagist/dt/franbarbalopez/mirror.svg?style=flat-square)](https://packagist.org/packages/franbarbalopez/mirror)
 
 [Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Usage](#usage) | [Security](#security) | [Development](#development)
