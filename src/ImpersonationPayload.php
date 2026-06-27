@@ -26,7 +26,7 @@ class ImpersonationPayload implements Arrayable
     ) {}
 
     /**
-     * Convert the payload to the array shape stored and signed by Mirror.
+     * Convert the payload to an array.
      *
      * @return array{impersonator_id: int|string, impersonator_guard: string, impersonated_id: int|string, impersonated_guard: string, started_at: int, context: array<string, mixed>}
      */
