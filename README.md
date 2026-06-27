@@ -34,13 +34,11 @@ Mirror stores a signed impersonation payload in the session, restores the origin
 - **TTL checks**: detect expired impersonation sessions while letting your app decide the response.
 - **Blade directives**: render UI based on active impersonation and model capabilities.
 - **Lifecycle events**: audit `ImpersonationStarted` and `ImpersonationStopped` events.
-- **Extensible internals**: override the manager, store, resolvers, preconditions, or exceptions through Laravel's container.
 
 ## Requirements
 
 - PHP `8.2` or higher
 - Laravel `11`, `12`, or `13`
-- At least one authenticated guard using Laravel's `session` driver
 
 ## Installation
 
@@ -338,28 +336,6 @@ try {
 | `CannotReadImpersonationState` | `active()`, `expired()`, `impersonator()`, `impersonated()`, `context()` | Stored impersonation state cannot be trusted. |
 
 Common concrete exceptions include `CanNotImpersonate`, `CanNotBeImpersonated`, `CannotInferTargetGuard`, `GuardDoesNotUseSessionDriver`, `ImpersonationAlreadyActive`, `ImpersonationNotActive`, `InvalidImpersonationSignature`, `MissingAuthenticatedSessionGuard`, and `MissingImpersonationSignature`.
-
-## Extending Mirror
-
-Mirror binds the public contract as a scoped Laravel service:
-
-```php
-use Mirror\Contracts\Mirror;
-use Mirror\ImpersonationManager;
-
-$this->app->scoped(Mirror::class, ImpersonationManager::class);
-```
-
-You can replace the default implementation by binding your own class to `Mirror\Contracts\Mirror` in a service provider:
-
-```php
-use App\Support\CustomImpersonationManager;
-use Mirror\Contracts\Mirror;
-
-$this->app->scoped(Mirror::class, CustomImpersonationManager::class);
-```
-
-The package keeps core classes and hooks open for extension so applications can customize storage, guard resolution, preconditions, or manager behavior without forking the package.
 
 ## Development
 
