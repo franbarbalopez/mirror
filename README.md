@@ -14,7 +14,7 @@
 [![Laravel Boost](https://badge.laravel.cloud/boost-badge.svg)](https://github.com/laravel/boost)
 [![Downloads](https://img.shields.io/packagist/dt/franbarbalopez/mirror.svg?style=flat-square)](https://packagist.org/packages/franbarbalopez/mirror)
 
-[Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Usage](#usage) | [Security](#security) | [Development](#development)
+[Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Usage](#usage) | [Configuration](#configuration) | [Security](#security) | [Exceptions](#exceptions) | [Development](#development)
 
 </div>
 
