@@ -6,7 +6,7 @@ namespace Mirror\Exceptions;
 
 use Throwable;
 
-interface CannotReadImpersonationState extends Throwable 
+interface CannotReadImpersonationState extends Throwable
 {
-	//
+    //
 }

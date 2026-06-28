@@ -9,7 +9,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Mirror\Exceptions\CannotInferTargetGuard;
-use Mirror\Exceptions\CannotStartImpersonation;
 use Mirror\Exceptions\GuardDoesNotUseSessionDriver;
 use ReflectionClass;
 

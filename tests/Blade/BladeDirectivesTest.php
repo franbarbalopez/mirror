@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\User;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Session;
@@ -10,9 +12,8 @@ use Mirror\Facades\Mirror;
 use function Pest\Laravel\actingAs;
 
 it('renders impersonating directives', function (): void {
-    $admin = User::factory()->create();
+    actingAs(User::factory()->create());
 
-    actingAs($admin);
     Mirror::impersonate(User::factory()->create());
 
     $rendered = Blade::render('@impersonating yes @endimpersonating @notImpersonating no @endnotImpersonating');
@@ -42,9 +43,8 @@ it('renders capability directives', function (): void {
 });
 
 it('supports guard-specific impersonating directives', function (): void {
-    $admin = User::factory()->create();
+    actingAs(User::factory()->create());
 
-    actingAs($admin);
     Mirror::impersonate(User::factory()->create());
 
     $rendered = Blade::render('@impersonating("web") web @endimpersonating @impersonating("admin") admin @endimpersonating');
@@ -54,9 +54,8 @@ it('supports guard-specific impersonating directives', function (): void {
 });
 
 it('detects a missing signature when rendering impersonating directives', function (): void {
-    $admin = User::factory()->create();
+    actingAs(User::factory()->create());
 
-    actingAs($admin);
     Mirror::impersonate(User::factory()->create());
 
     Session::forget('mirror.impersonation.signature');

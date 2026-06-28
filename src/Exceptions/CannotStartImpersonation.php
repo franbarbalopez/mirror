@@ -6,7 +6,7 @@ namespace Mirror\Exceptions;
 
 use Throwable;
 
-interface CannotStartImpersonation extends Throwable 
+interface CannotStartImpersonation extends Throwable
 {
-	//
+    //
 }

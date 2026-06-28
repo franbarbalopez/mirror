@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mirror\Tests;
+namespace Mirror\Tests\TestSupport;
 
 use Orchestra\Testbench\Attributes\WithMigration;
 use Orchestra\Testbench\Concerns\WithWorkbench;
