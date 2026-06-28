@@ -20,6 +20,14 @@ Mirror is an elegant user impersonation package for Laravel. It allows administr
 - Flexible URL redirection
 - Lifecycle events for audit logging
 
+## Upgrading to v2
+
+Mirror v2 introduces many breaking changes. Please read the release notes before upgrading.
+
+You can continue using v1 if you are not ready to migrate.
+
+[Read the v2.0 release notes](https://github.com/franbarbalopez/mirror/releases/tag/v2.0)
+
 ## Requirements
 
 - PHP 8.2+
