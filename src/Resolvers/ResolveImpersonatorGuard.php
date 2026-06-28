@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Mirror\Resolvers;
+
+use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Mirror\Exceptions\MissingAuthenticatedSessionGuard;
+use Mirror\Guard;
+use Mirror\PendingImpersonation;
+
+class ResolveImpersonatorGuard
+{
+    public function handle(PendingImpersonation $pending, Closure $next): mixed
+    {
+        $guard = Guard::authenticated();
+
+        if ($guard === null) {
+            throw MissingAuthenticatedSessionGuard::make();
+        }
+
+        $pending->setImpersonatorGuard($guard);
+
+        /** @var Authenticatable $impersonator */
+        $impersonator = auth($guard)->user();
+        $pending->setImpersonator($impersonator);
+
+        return $next($pending);
+    }
+}

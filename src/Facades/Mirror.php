@@ -5,32 +5,23 @@ declare(strict_types=1);
 namespace Mirror\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Mirror\Exceptions\ImpersonationException;
-use Mirror\Impersonator;
+use Mirror\ImpersonationManager;
 
 /**
- * @method static ?string start(\Illuminate\Contracts\Auth\Authenticatable $user, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null)
- * @method static ?string startByKey(int|string $key, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null)
- * @method static ?string startByEmail(string $email, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null)
- * @method static void stop()
- * @method static void forceStop()
- * @method static bool isImpersonating()
- * @method static \Illuminate\Contracts\Auth\Authenticatable|null getImpersonator()
- * @method static ?string getLeaveRedirectUrl()
- * @method static int|string|null impersonatorId()
- * @method static ?string as(\Illuminate\Contracts\Auth\Authenticatable $user, ?string $leaveRedirectUrl = null, ?string $startRedirectUrl = null)
- * @method static void leave()
- * @method static bool impersonating()
+ * @method static void impersonate(\Illuminate\Contracts\Auth\Authenticatable $target, ?string $guard = null, array<string, mixed> $context = [])
+ * @method static array<string, mixed> leave()
+ * @method static bool active()
+ * @method static bool expired()
  * @method static \Illuminate\Contracts\Auth\Authenticatable|null impersonator()
+ * @method static \Illuminate\Contracts\Auth\Authenticatable|null impersonated()
+ * @method static array<string, mixed> context()
  *
- * @throws ImpersonationException
- *
- * @see Impersonator
+ * @see ImpersonationManager
  */
 class Mirror extends Facade
 {
     /**
-     * Get the registered name of the component.
+     * Return the container binding key used by the facade.
      */
     protected static function getFacadeAccessor(): string
     {

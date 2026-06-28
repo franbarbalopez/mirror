@@ -1,54 +1,73 @@
-<img src="art/logo.png" alt="Mirror Logo">
-
+<!-- prettier-ignore -->
 <div align="center">
-    <img alt="Latest Version on Packagist" src="https://img.shields.io/packagist/v/franbarbalopez/mirror.svg">
-    <img alt="GitHub Tests Action Status" src="https://img.shields.io/github/actions/workflow/status/franbarbalopez/mirror/tests.yml?label=tests">
-    <img alt="Total Downloads" src="https://img.shields.io/packagist/dt/franbarbalopez/mirror.svg">
-    <img alt="License" src="https://img.shields.io/packagist/l/franbarbalopez/mirror.svg">
-</div>
+
+<img src="art/logo.png" alt="Mirror logo" width="220">
 
 # Mirror
 
-Mirror is an elegant user impersonation package for Laravel. It allows administrators to seamlessly log in as other users to troubleshoot issues, provide support, or test user experiences. Mirror handles session integrity with cryptographic verification, automatic expiration, multi-guard support, flexible middleware, and lifecycle events for audit logging. Perfect for production applications that need reliable and secure user impersonation.
+**Secure, elegant user impersonation for Laravel applications.**
+
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/franbarbalopez/mirror.svg?style=flat-square)](https://packagist.org/packages/franbarbalopez/mirror)
+[![Tests](https://img.shields.io/github/actions/workflow/status/franbarbalopez/mirror/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/franbarbalopez/mirror/actions/workflows/tests.yml)
+[![PHP](https://img.shields.io/packagist/dependency-v/franbarbalopez/mirror/php?style=flat-square)](composer.json)
+[![Laravel Compatibility](https://badge.laravel.cloud/badge/franbarbalopez/mirror)](https://packagist.org/packages/franbarbalopez/mirror)
+[![Laravel Boost](https://badge.laravel.cloud/boost-badge.svg)](https://github.com/laravel/boost)
+[![Downloads](https://img.shields.io/packagist/dt/franbarbalopez/mirror.svg?style=flat-square)](https://packagist.org/packages/franbarbalopez/mirror)
+
+[Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Usage](#usage) | [Configuration](#configuration) | [Security](#security) | [Exceptions](#exceptions) | [Development](#development)
+
+</div>
+
+Mirror is a Laravel package for safely logging in as another user. It is designed for admin panels, support tooling, QA workflows, and production applications that need impersonation without handing route handling, redirects, or authorization policy decisions to a package.
+
+Mirror stores a signed impersonation payload in the session, restores the original user when leaving, supports multiple session guards, exposes lifecycle events for audit logs, and keeps the application in control of the HTTP flow.
+
+> [!IMPORTANT]
+> Mirror only works with Laravel guards backed by the `session` driver. Token, API, and stateless guards are intentionally rejected.
 
 ## Features
 
-- HMAC-SHA256 session integrity to prevent tampering
-- Configurable TTL expiration
-- Middleware for access control and TTL enforcement
-- Multi-guard support
-- Flexible URL redirection
-- Lifecycle events for audit logging
+- **Signed session state**: HMAC-SHA256 verification using your Laravel `app.key`.
+- **Multi-guard support**: resolve the authenticated impersonator guard and infer or explicitly set the target guard.
+- **Explicit authorization hooks**: require models to decide who can impersonate and who can be impersonated.
+- **Custom context**: attach signed metadata such as support reasons, ticket IDs, or workflow sources.
+- **TTL checks**: detect expired impersonation sessions while letting your app decide the response.
+- **Blade directives**: render UI based on active impersonation and model capabilities.
+- **Lifecycle events**: audit `ImpersonationStarted` and `ImpersonationStopped` events.
 
 ## Requirements
 
-- PHP 8.2+
-- Laravel 11+
+- PHP `8.2` or higher
+- Laravel `11`, `12`, or `13`
 
 ## Installation
+
+Install the package with Composer:
 
 ```bash
 composer require franbarbalopez/mirror
 ```
 
-Optional - publish the config file:
+Laravel auto-discovers the service provider and facade alias. If you want to customize the TTL or session namespace, publish the configuration file:
 
 ```bash
 php artisan vendor:publish --tag=mirror
 ```
 
+The published file is available at `config/mirror.php`.
+
 ## Quick Start
 
-### 1. Add Trait to User Model
+### 1. Implement the Contract
+
+Every model that can start or receive impersonation must implement `Mirror\Contracts\Impersonatable`.
 
 ```php
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Mirror\Concerns\Impersonatable;
+use Mirror\Contracts\Impersonatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Impersonatable
 {
-    use Impersonatable;
-
     public function canImpersonate(): bool
     {
         return $this->hasRole('admin');
@@ -61,325 +80,287 @@ class User extends Authenticatable
 }
 ```
 
-**Important:** If you don't implement `canImpersonate()`, everyone can impersonate everyone. The trait returns `true` by default.
+> [!NOTE]
+> Mirror does not prescribe your authorization model. Use roles, policies, permissions, feature flags, or any business rule that fits your application.
 
 ### 2. Start Impersonating
 
 ```php
+use App\Models\User;
 use Mirror\Facades\Mirror;
 
 public function impersonate(User $user)
 {
-    Mirror::start($user);
+    Mirror::impersonate(
+        target: $user,
+        context: [
+            'reason' => request('reason'),
+            'ticket_id' => request('ticket_id'),
+        ],
+    );
 
     return redirect()->route('dashboard');
 }
 ```
 
-### 3. Stop Impersonating
+### 3. Leave Impersonation
 
 ```php
+use Mirror\Facades\Mirror;
+
 public function leave()
 {
-    Mirror::stop();
+    $context = Mirror::leave();
+
+    audit('Impersonation ended', $context);
 
     return redirect()->route('admin.users.index');
 }
 ```
 
-## Security
-
-Impersonation sessions are protected with HMAC-SHA256 hashes using your app key. The hash covers the impersonator ID, guard name, start time, and redirect URL. On every `stop()` call, Mirror verifies this hash - if someone's tampered with the session, it throws an exception and clears everything.
-
-Configure TTL in `config/mirror.php` to automatically expire sessions after a set time.
-
-## API Reference
+## Usage
 
 ### Starting Impersonation
 
-By user instance:
+Use the facade to impersonate a target user. Mirror resolves the current authenticated session guard as the impersonator guard.
 
 ```php
-Mirror::start($user);
+Mirror::impersonate($user);
+```
 
-// With redirect URLs
-$redirectUrl = Mirror::start(
-    user: $targetUser,
-    leaveRedirectUrl: route('admin.users.index'),
-    startRedirectUrl: route('dashboard')
+Pass a guard when the target user should be authenticated through a specific guard:
+
+```php
+Mirror::impersonate($user, guard: 'web');
+```
+
+Attach signed context when you want to carry audit metadata across the impersonation lifecycle:
+
+```php
+Mirror::impersonate(
+    target: $user,
+    guard: 'web',
+    context: [
+        'reason' => 'Support request',
+        'ticket_id' => 123,
+        'source' => 'admin-panel',
+    ],
 );
-
-return redirect($redirectUrl);
 ```
 
-By primary key (works with int, UUID, ULID, etc.):
+Mirror prevents nested impersonation and throws `ImpersonationAlreadyActive` if the current session is already impersonating another user.
+
+### Guard Resolution
+
+Mirror resolves guards in this order:
+
+| Guard | Resolution |
+| --- | --- |
+| Impersonator guard | First authenticated Laravel guard using the `session` driver. |
+| Target guard | Explicit `guard` argument, when provided. |
+| Target guard | Target model `guardName()` method, `guard_name` attribute, or `guard_name` default property. |
+| Target guard | First matching `session` guard whose provider model matches the target model. |
+
+If multiple target guards match the same model, Mirror uses the first matching guard. Pass `guard:` explicitly when the choice matters.
+
+### Reading State
 
 ```php
-Mirror::startByKey(123);
-
-Mirror::startByKey('550e8400-e29b-41d4-a716-446655440000');
+Mirror::active();       // bool
+Mirror::expired();      // bool
+Mirror::impersonator(); // ?Authenticatable
+Mirror::impersonated(); // ?Authenticatable
+Mirror::context();      // array
 ```
 
-By email:
+Use these methods to drive banners, route middleware, audit logs, or support tooling.
 
 ```php
-Mirror::startByEmail('user@example.com');
-```
-
-### Stopping Impersonation
-
-```php
-Mirror::stop();
-
-// Force stop - bypasses TTL check but still verifies integrity
-Mirror::forceStop();
-```
-
-Use `forceStop()` when you need to end impersonation from admin actions or cleanup scripts - it skips the TTL check but still throws if the session's been tampered with.
-
-### Checking State
-
-```php
-Mirror::isImpersonating(): bool
-Mirror::getImpersonator(): ?Authenticatable
-Mirror::impersonatorId(): int|string|null
-Mirror::getLeaveRedirectUrl(): ?string
-```
-
-### Aliases
-
-```php
-Mirror::as($user);           // same as start()
-Mirror::leave();             // same as stop()
-Mirror::impersonating();     // same as isImpersonating()
-Mirror::impersonator();      // same as getImpersonator()
-```
-
-## Middleware
-
-### `mirror.ttl`
-
-Checks if the impersonation session has expired and automatically calls `stop()` if needed:
-
-```php
-Route::middleware('mirror.ttl')->group(function () {
-    Route::get('/admin/users', [UserController::class, 'index']);
-    Route::get('/admin/users/{user}', [UserController::class, 'show']);
-});
-```
-
-Good for protecting sensitive admin areas where you want expired sessions to exit gracefully. Note that when TTL expires, this middleware will end the impersonation and redirect, so make sure your session cleanup is set up properly.
-
-### `mirror.require`
-
-Only allows access if actively impersonating:
-
-```php
-Route::middleware('mirror.require')->group(function () {
-    Route::get('/impersonation/banner', function () {
-        return view('impersonation.banner');
-    });
-});
-```
-
-Useful for special UI components that only make sense during impersonation - like a banner showing who you're impersonating.
-
-### `mirror.prevent`
-
-Blocks access while impersonating:
-
-```php
-Route::middleware('mirror.prevent')->group(function () {
-    Route::post('/admin/users/{user}/delete', [UserController::class, 'destroy']);
-    Route::get('/admin/settings', [SettingsController::class, 'edit']);
-});
-```
-
-Protects destructive actions or sensitive settings that should only be accessed as the original user, not while impersonating someone else.
-
-## Authorization
-
-The `Impersonatable` trait provides two methods that both return `true` by default. Override them to add your own logic:
-
-```php
-use Mirror\Concerns\Impersonatable;
-
-class User extends Authenticatable
-{
-    use Impersonatable;
-
-    public function canImpersonate(): bool
-    {
-        return $this->hasRole('admin');
-    }
-
-    public function canBeImpersonated(): bool
-    {
-        return ! $this->hasRole('super-admin');
-    }
+if (Mirror::active()) {
+    $impersonator = Mirror::impersonator();
+    $impersonated = Mirror::impersonated();
 }
 ```
 
-You don't need the trait - Mirror will look for these methods on your user model regardless:
+### Expiration
+
+The `mirror.ttl` value controls whether `Mirror::expired()` returns `true`. The default is `1800` seconds.
 
 ```php
-class User extends Authenticatable
-{
-    public function canImpersonate(): bool
-    {
-        return $this->hasPermission('impersonate-users');
-    }
+if (Mirror::active() && Mirror::expired()) {
+    $context = Mirror::leave();
 
-    public function canBeImpersonated(): bool
-    {
-        return ! $this->is_system_account;
-    }
+    return redirect()
+        ->route('admin.users.index')
+        ->with('warning', __('Impersonation expired.'));
 }
 ```
 
-## URL Redirection
+> [!TIP]
+> Mirror reports expiration, but does not force logout, redirect, or abort a request. Put your preferred behavior in middleware or controller code.
 
-You can control where users go when starting and stopping impersonation:
-
-```php
-public function impersonate(User $user)
-{
-    $redirectUrl = Mirror::start(
-        user: $user,
-        leaveRedirectUrl: route('admin.users.index'),  // where to go when they stop
-        startRedirectUrl: route('dashboard')            // where to go right now
-    );
-
-    return redirect($redirectUrl);
-}
-
-public function leave()
-{
-    Mirror::stop();
-
-    return redirect(Mirror::getLeaveRedirectUrl());
-}
-```
-
-If you don't specify `leaveRedirectUrl`, it defaults to the current URL where `start()` was called.
-
-## Events
-
-Mirror dispatches two events you can listen to:
-
-- `Mirror\Events\ImpersonationStarted`
-- `Mirror\Events\ImpersonationStopped`
-
-Both events contain the impersonator, the target user, and the guard name. Good for audit logs or triggering workflows.
-
-Events are dispatched **after the response** is sent to the client, ensuring that critical impersonation operations complete without delay. This is especially important for middleware like `mirror.ttl` that may run on every request.
+Set the TTL to `null` to disable expiration checks:
 
 ```php
-use Mirror\Events\ImpersonationStarted;
-
-Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event) {
-    // Log the activity to your audit system of choice
-    Log::info('User impersonation started', [
-        'impersonator_id' => $event->impersonator->id,
-        'impersonated_id' => $event->impersonated->id,
-        'guard' => $event->guardName,
-    ]);
-});
+'ttl' => null,
 ```
 
-## Performance & Optimization
+### Blade Directives
 
-Mirror is optimized for high-performance applications:
-
-### Request-Scoped Caching
-
-The impersonator model is cached within a single request to avoid redundant database queries:
-
-```php
-// This first call will query the database
-$impersonator = Mirror::getImpersonator();
-
-// Subsequent calls in the same request use the cached instance, therefore this one will not:
-$impersonator = Mirror::getImpersonator();
-```
-
-This is particularly beneficial for middleware like `mirror.ttl` that run on every request.
-
-### Deferred Event Dispatching
-
-Impersonation events are dispatched after the response is sent to the client, ensuring that event listeners don't impact response time. This keeps your request cycle fast while still allowing audit logging and other background tasks.
-
-## Multi-Guard Support
-
-Mirror automatically detects which guard you're using:
-
-```php
-Auth::guard('admin')->login($admin);
-
-Mirror::start($user); // uses 'admin' guard
-
-Mirror::stop(); // restores to 'admin' guard
-```
-
-You don't need to specify the guard manually - it figures it out from the current auth context.
-
-## Blade Directives
-
-**@impersonating**
+Mirror registers Blade condition directives for common UI checks.
 
 ```blade
 @impersonating
     <div class="alert">
-        You're impersonating {{ auth()->user()->name }}.
+        You are impersonating {{ auth()->user()->name }}.
         <a href="{{ route('impersonation.leave') }}">Exit</a>
     </div>
 @endimpersonating
 
-{{-- Check specific guard --}}
-@impersonating('admin')
-    <div>Impersonating via admin guard</div>
+@notImpersonating
+    <span>Normal session</span>
+@endnotImpersonating
+```
+
+Guard-specific checks are supported:
+
+```blade
+@impersonating('web')
+    <span>Impersonating through the web guard</span>
 @endimpersonating
 ```
 
-**@canImpersonate**
+Capability directives call the `Impersonatable` contract methods:
 
 ```blade
 @canImpersonate
-    <a href="{{ route('admin.users.index') }}">Manage Users</a>
+    <a href="{{ route('admin.users.index') }}">Manage users</a>
 @endcanImpersonate
 
-{{-- With guard --}}
-@canImpersonate('admin')
-    <div>Admin tools</div>
-@endcanImpersonate
-```
-
-**@canBeImpersonated**
-
-```blade
-{{-- Check current user --}}
-@canBeImpersonated
-    <span>Available for support</span>
-@endcanBeImpersonated
-
-{{-- Check specific user --}}
 @canBeImpersonated($user)
     <form method="POST" action="{{ route('impersonation.start', $user) }}">
         @csrf
-        <button>Impersonate</button>
+        <button type="submit">Impersonate</button>
     </form>
-@endcanBeImpersonated
-
-{{-- With guard --}}
-@canBeImpersonated($user, 'admin')
-    <button>Login as this user</button>
 @endcanBeImpersonated
 ```
 
-## License
+### Events
 
-MIT. See [LICENSE.md](LICENSE.md).
+Mirror dispatches two events:
 
-## Credits
+| Event | When |
+| --- | --- |
+| `Mirror\Events\ImpersonationStarted` | After the target user is logged in. |
+| `Mirror\Events\ImpersonationStopped` | After the original impersonator is restored. |
 
-Developed by [franbarbalopez](https://github.com/franbarbalopez).
+Both events expose `$impersonator`, `$impersonated`, and `$context`.
+
+```php
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Mirror\Events\ImpersonationStarted;
+
+Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event): void {
+    Log::info('User impersonation started', [
+        'impersonator_id' => $event->impersonator->getAuthIdentifier(),
+        'impersonated_id' => $event->impersonated->getAuthIdentifier(),
+        'context' => $event->context,
+    ]);
+});
+```
+
+## Configuration
+
+The default configuration is intentionally small:
+
+```php
+return [
+    'ttl' => 1800,
+
+    'session' => [
+        'key' => env('MIRROR_SESSION_KEY', 'mirror.impersonation'),
+    ],
+];
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `ttl` | `1800` | Maximum age, in seconds, used by `Mirror::expired()`. Set to `null` to disable expiration checks. |
+| `session.key` | `mirror.impersonation` | Session namespace used to store the signed payload and signature. |
+
+## Security
+
+Mirror stores the impersonator ID, impersonator guard, target ID, target guard, start timestamp, and context in the session. That payload is signed with HMAC-SHA256 using `config('app.key')`.
+
+When Mirror reads impersonation state, it verifies the signature. If the payload or signature is missing or tampered with, Mirror clears the stored impersonation state and throws an exception.
+
+Security behavior to be aware of:
+
+- Both users must implement `Impersonatable`.
+- The impersonator must return `true` from `canImpersonate()`.
+- The target must return `true` from `canBeImpersonated()`.
+- Only session-backed guards are accepted.
+- Nested impersonation is rejected.
+- Expiration is reported by `Mirror::expired()`; your application decides how to enforce it.
+
+> [!WARNING]
+> Keep your Laravel `APP_KEY` private and stable. Rotating it invalidates existing Mirror signatures, which is normally desirable for security but can interrupt active impersonation sessions.
+
+## Exceptions
+
+All package exceptions extend `Mirror\Exceptions\MirrorException`. For application code, the phase interfaces are usually the best catch points.
+
+```php
+use Mirror\Exceptions\CannotLeaveImpersonation;
+use Mirror\Exceptions\CannotStartImpersonation;
+use Mirror\Facades\Mirror;
+
+try {
+    Mirror::impersonate($user);
+} catch (CannotStartImpersonation $exception) {
+    report($exception);
+}
+
+try {
+    Mirror::leave();
+} catch (CannotLeaveImpersonation $exception) {
+    report($exception);
+}
+```
+
+| Phase interface | Raised by | Typical cause |
+| --- | --- | --- |
+| `CannotStartImpersonation` | `impersonate()` | Authorization failed, no authenticated session guard exists, target guard cannot be inferred, or impersonation is already active. |
+| `CannotLeaveImpersonation` | `leave()` | No active impersonation exists or stored state is invalid. |
+| `CannotReadImpersonationState` | `active()`, `expired()`, `impersonator()`, `impersonated()`, `context()` | Stored impersonation state cannot be trusted. |
+
+Common concrete exceptions include `CanNotImpersonate`, `CanNotBeImpersonated`, `CannotInferTargetGuard`, `GuardDoesNotUseSessionDriver`, `ImpersonationAlreadyActive`, `ImpersonationNotActive`, `InvalidImpersonationSignature`, `MissingAuthenticatedSessionGuard`, and `MissingImpersonationSignature`.
+
+## Development
+
+Install dependencies:
+
+```bash
+composer install
+```
+
+Run the full quality suite:
+
+```bash
+composer test
+```
+
+Useful scripts:
+
+| Command | Description |
+| --- | --- |
+| `composer test:lint` | Check formatting with Laravel Pint. |
+| `composer lint` | Fix formatting with Laravel Pint. |
+| `composer test:analyse` | Run PHPStan/Larastan. |
+| `composer test:refactor` | Run Rector in dry-run mode. |
+| `composer test:coverage` | Run Pest with exactly 100% coverage. |
+| `composer fix` | Run Rector and Pint fixes. |
+| `composer serve` | Build and serve the Orchestra Testbench workbench app. |
+
+The test suite uses [Pest](https://pestphp.com/) and [Orchestra Testbench](https://packages.tools/testbench) to validate Mirror inside a Laravel application context.
