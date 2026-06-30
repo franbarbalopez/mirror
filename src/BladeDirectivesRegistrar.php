@@ -10,10 +10,6 @@ use Mirror\Contracts\Impersonatable;
 
 class BladeDirectivesRegistrar
 {
-    public function __construct(
-        protected SessionImpersonationStore $store,
-    ) {}
-
     /**
      * Register Mirror's Blade condition directives.
      */
@@ -27,7 +23,7 @@ class BladeDirectivesRegistrar
 
     protected function impersonating(?string $guard): bool
     {
-        $payload = $this->store->get();
+        $payload = app(SessionImpersonationStore::class)->get();
 
         if (! $payload instanceof ImpersonationPayload) {
             return false;
